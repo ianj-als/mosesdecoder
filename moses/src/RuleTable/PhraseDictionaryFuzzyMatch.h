@@ -61,10 +61,12 @@ namespace Moses
     virtual const TargetPhraseCollection *GetTargetPhraseCollection(const Phrase& src) const
     {
       assert(false);
+	  return NULL; //added to be compatible with VS 2012
     }
     virtual DecodeType GetDecodeType() const
     {
       assert(false);
+	  return Translate; //added to be compatible with VS 2012
     }
     
     TO_STRING();

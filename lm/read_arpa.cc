@@ -17,8 +17,14 @@
 
 namespace lm {
 
+
+#ifdef WIN32
+// 1 for '\t', '\n', '\r' and ' '.  This is stricter than isspace.  
+const bool kARPASpaces[256] = {0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+#else
 // 1 for '\t', '\n', and ' '.  This is stricter than isspace.  
 const bool kARPASpaces[256] = {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+#endif
 
 namespace {
 
@@ -81,6 +87,9 @@ void ReadBackoff(util::FilePiece &in, Prob &/*weights*/) {
           UTIL_THROW(FormatLoadException, "Non-zero backoff " << got << " provided for an n-gram that should have no backoff");
       }
       break;
+	#ifdef WIN32
+	case '\r':
+	#endif
     case '\n':
       break;
     default:
@@ -107,11 +116,22 @@ void ReadBackoff(util::FilePiece &in, float &backoff) {
         UTIL_THROW_IF(float_class == FP_NAN || float_class == FP_INFINITE, FormatLoadException, "Bad backoff " << backoff);
 #endif
       }
-      UTIL_THROW_IF(in.get() != '\n', FormatLoadException, "Expected newline after backoff");
+	  #ifdef WIN32
+	  {
+		char _first = in.get();
+		UTIL_THROW_IF(_first != '\n' && ! (_first == '\r' && in.get() == '\n'), FormatLoadException, "Expected newline after backoff");
+	  }
+      #else
+	  UTIL_THROW_IF(in.get() != '\n', FormatLoadException, "Expected newline after backoff");
+      #endif
       break;
     case '\n':
       backoff = ngram::kNoExtensionBackoff;
       break;
+	#ifdef WIN32
+	case '\r':
+	  break;
+	#endif
     default:
       UTIL_THROW(FormatLoadException, "Expected tab or newline for backoff");
   }

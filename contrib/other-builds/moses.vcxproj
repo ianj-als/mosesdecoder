@@ -34,6 +34,7 @@
     <ClInclude Include="..\..\moses\src\ConfusionNet.h" />
     <ClInclude Include="..\..\moses\src\CYKPlusParser\ChartRuleLookupManagerCYKPlus.h" />
     <ClInclude Include="..\..\moses\src\CYKPlusParser\ChartRuleLookupManagerMemory.h" />
+    <ClInclude Include="..\..\moses\src\CYKPlusParser\ChartRuleLookupManagerMemoryPerSentence.h" />
     <ClInclude Include="..\..\moses\src\CYKPlusParser\ChartRuleLookupManagerOnDisk.h" />
     <ClInclude Include="..\..\moses\src\CYKPlusParser\DotChart.h" />
     <ClInclude Include="..\..\moses\src\CYKPlusParser\DotChartInMemory.h" />
@@ -59,6 +60,10 @@
     <ClInclude Include="..\..\moses\src\File.h" />
     <ClInclude Include="..\..\moses\src\FilePtr.h" />
     <ClInclude Include="..\..\moses\src\FloydWarshall.h" />
+    <ClInclude Include="..\..\moses\src\fuzzy-match\FuzzyMatchWrapper.h" />
+    <ClInclude Include="..\..\moses\src\fuzzy-match\SentenceAlignment.h" />
+    <ClInclude Include="..\..\moses\src\fuzzy-match\SuffixArray.h" />
+    <ClInclude Include="..\..\moses\src\fuzzy-match\Vocabulary.h" />
     <ClInclude Include="..\..\moses\src\GenerationDictionary.h" />
     <ClInclude Include="..\..\moses\src\GlobalLexicalModel.h" />
     <ClInclude Include="..\..\moses\src\gzfilebuf.h" />
@@ -110,6 +115,7 @@
     <ClInclude Include="..\..\moses\src\RuleTable\LoaderHiero.h" />
     <ClInclude Include="..\..\moses\src\RuleTable\LoaderStandard.h" />
     <ClInclude Include="..\..\moses\src\RuleTable\PhraseDictionaryALSuffixArray.h" />
+    <ClInclude Include="..\..\moses\src\RuleTable\PhraseDictionaryFuzzyMatch.h" />
     <ClInclude Include="..\..\moses\src\RuleTable\PhraseDictionaryNodeSCFG.h" />
     <ClInclude Include="..\..\moses\src\RuleTable\PhraseDictionaryOnDisk.h" />
     <ClInclude Include="..\..\moses\src\RuleTable\PhraseDictionarySCFG.h" />
@@ -180,6 +186,7 @@
     <ClCompile Include="..\..\moses\src\ConfusionNet.cpp" />
     <ClCompile Include="..\..\moses\src\CYKPlusParser\ChartRuleLookupManagerCYKPlus.cpp" />
     <ClCompile Include="..\..\moses\src\CYKPlusParser\ChartRuleLookupManagerMemory.cpp" />
+    <ClCompile Include="..\..\moses\src\CYKPlusParser\ChartRuleLookupManagerMemoryPerSentence.cpp" />
     <ClCompile Include="..\..\moses\src\CYKPlusParser\ChartRuleLookupManagerOnDisk.cpp" />
     <ClCompile Include="..\..\moses\src\CYKPlusParser\DotChartInMemory.cpp" />
     <ClCompile Include="..\..\moses\src\CYKPlusParser\DotChartOnDisk.cpp" />
@@ -200,6 +207,10 @@
     <ClCompile Include="..\..\moses\src\FFState.cpp" />
     <ClCompile Include="..\..\moses\src\File.cpp" />
     <ClCompile Include="..\..\moses\src\FloydWarshall.cpp" />
+    <ClCompile Include="..\..\moses\src\fuzzy-match\FuzzyMatchWrapper.cpp" />
+    <ClCompile Include="..\..\moses\src\fuzzy-match\SentenceAlignment.cpp" />
+    <ClCompile Include="..\..\moses\src\fuzzy-match\SuffixArray.cpp" />
+    <ClCompile Include="..\..\moses\src\fuzzy-match\Vocabulary.cpp" />
     <ClCompile Include="..\..\moses\src\GenerationDictionary.cpp" />
     <ClCompile Include="..\..\moses\src\GlobalLexicalModel.cpp" />
     <ClCompile Include="..\..\moses\src\hash.cpp" />
@@ -245,6 +256,7 @@
     <ClCompile Include="..\..\moses\src\RuleTable\LoaderHiero.cpp" />
     <ClCompile Include="..\..\moses\src\RuleTable\LoaderStandard.cpp" />
     <ClCompile Include="..\..\moses\src\RuleTable\PhraseDictionaryALSuffixArray.cpp" />
+    <ClCompile Include="..\..\moses\src\RuleTable\PhraseDictionaryFuzzyMatch.cpp" />
     <ClCompile Include="..\..\moses\src\RuleTable\PhraseDictionaryNodeSCFG.cpp" />
     <ClCompile Include="..\..\moses\src\RuleTable\PhraseDictionaryOnDisk.cpp" />
     <ClCompile Include="..\..\moses\src\RuleTable\PhraseDictionarySCFG.cpp" />
@@ -300,10 +312,12 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -321,14 +335,22 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\Program Files\boost\boost_1_47;C:\GnuWin32\include;$(IncludePath)</IncludePath>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\Program Files\boost\boost_1_47;C:\GnuWin32\include;$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\boost\include\boost-1_52;C:\zlib\zlib-vs2012\src;C:\GnuWin32\include;$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\boost\include\boost-1_52;C:\zlib\zlib-vs2012\src;C:\Program Files\boost\boost_1_47;C:\GnuWin32\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LibraryPath>C:\boost\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);</LibraryPath>
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LibraryPath>C:\boost\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);</LibraryPath>
+    <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\boost\boost_1_47;$(SolutionDir)/../../moses/src;$(SolutionDir)/../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WITH_THREADS;NO_PIPES;WIN32;_DEBUG;_CONSOLE;TRACE_ENABLE;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)/../../moses/src;$(SolutionDir)/../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>KENLM_MAX_ORDER=6;WITH_THREADS;NO_PIPES;WIN32;_DEBUG;_CONSOLE;TRACE_ENABLE;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -346,8 +368,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>C:\boost\boost_1_47;$(SolutionDir)/../../moses/src;$(SolutionDir)/../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WITH_THREADS;NO_PIPES;WIN32;NDEBUG;_CONSOLE;LM_INTERNAL;TRACE_ENABLE;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)/../../moses/src;$(SolutionDir)/../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>KENLM_MAX_ORDER=6;WITH_THREADS;NO_PIPES;WIN32;NDEBUG;_CONSOLE;LM_INTERNAL;TRACE_ENABLE;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>

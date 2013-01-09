@@ -768,6 +768,7 @@ unsigned int FuzzyMatchWrapper::compute_length( const vector< WORD_ID > &sentenc
 		}
 		cout << best_cost << " ||| " << best_match << " ||| " << best_path << endl;
 	}
+	return 0; //changed to be compatible with VS 2012
 }
 
 /* definition of short matches

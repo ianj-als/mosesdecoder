@@ -53,3 +53,10 @@ scripts/training/train-model.perl
 dist
 bin
 previous.sh
+contrib/other-builds/Debug
+contrib/other-builds/Release
+contrib/other-builds/*.sdf
+contrib/other-builds/*.opensdf
+contrib/other-builds/*.user
+contrib/other-builds/*.suo
+
