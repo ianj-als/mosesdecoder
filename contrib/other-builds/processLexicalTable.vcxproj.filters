@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\lm\build_binary.cc">
+    <ClCompile Include="..\..\misc\processLexicalTable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
