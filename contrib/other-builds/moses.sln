@@ -25,10 +25,19 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7F220599-D354-48B2-86DF-DA26A579E6F5}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "processPhraseTable", "processPhraseTable.vcxproj", "{AA25C7EB-2958-499C-A0D8-472049DF6B3D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8122157A-0DE5-44FF-8E5B-024ED6ACE7AF} = {8122157A-0DE5-44FF-8E5B-024ED6ACE7AF}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "processLexicalTable", "processLexicalTable.vcxproj", "{4A93EB7B-88D0-48D8-9B7E-30B783130591}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8122157A-0DE5-44FF-8E5B-024ED6ACE7AF} = {8122157A-0DE5-44FF-8E5B-024ED6ACE7AF}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "build_binary", "build_binary.vcxproj", "{530B590B-7F01-48D7-8CAC-22C46BABEB09}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A5402E0B-6ED7-465C-9669-E4124A0CDDCB} = {A5402E0B-6ED7-465C-9669-E4124A0CDDCB}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
