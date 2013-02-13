@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <Bundle Version="1.0.0.0" UpgradeCode="3BD54565-35A4-4616-AAA8-494982D25C86">
+	<BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense" />
+	<WixVariable Id="WixStdbaLicenseRtf" Value="..\..\lgpl-3.0.rtf" /> 
+	
+	<Chain DisableSystemRestore="yes">
+		<PackageGroupRef Id="ModelPackage"/>
+	</Chain>
+  </Bundle>
+  
+  <Fragment>
+	<util:RegistrySearch 
+            Root="HKCU" 
+            Key="SOFTWARE\Moses Core Team\MosesDecoder\Models" 
+			Value="FrEnModel"
+            Format="raw"
+			Variable="FrEnModelReg"/>
+	
+	<PackageGroup Id="ModelPackage">
+		<ExePackage DownloadUrl="http://10.100.1.48:8080/FrEnModelInstall.exe"
+			SourceFile="FrEnModelInstall.exe" 
+			Cache="no" 
+            Compressed="no" 
+            PerMachine="yes" 
+            Vital="yes"
+			DetectCondition="NOT FrEnModelReg" />
+	</PackageGroup>
+  </Fragment>
+</Wix>

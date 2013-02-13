@@ -39,6 +39,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "build_binary", "build_binar
 		{A5402E0B-6ED7-465C-9669-E4124A0CDDCB} = {A5402E0B-6ED7-465C-9669-E4124A0CDDCB}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "moses-chart-cmd", "moses-chart-cmd.vcxproj", "{753DC775-9D9B-4955-83D6-7BC631376C15}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -81,6 +83,10 @@ Global
 		{530B590B-7F01-48D7-8CAC-22C46BABEB09}.Debug|Win32.Build.0 = Debug|Win32
 		{530B590B-7F01-48D7-8CAC-22C46BABEB09}.Release|Win32.ActiveCfg = Release|Win32
 		{530B590B-7F01-48D7-8CAC-22C46BABEB09}.Release|Win32.Build.0 = Release|Win32
+		{753DC775-9D9B-4955-83D6-7BC631376C15}.Debug|Win32.ActiveCfg = Debug|Win32
+		{753DC775-9D9B-4955-83D6-7BC631376C15}.Debug|Win32.Build.0 = Debug|Win32
+		{753DC775-9D9B-4955-83D6-7BC631376C15}.Release|Win32.ActiveCfg = Release|Win32
+		{753DC775-9D9B-4955-83D6-7BC631376C15}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Product Name='MosesDecoder' Id='5488D48A-5E2A-4D4C-8ECC-776EF1E24105' UpgradeCode='6C521F19-CB1E-4B56-A3FB-60DCFFD584E6'
+    Language='1033' Codepage='1252' Version='1.0.0.0' Manufacturer='Moses Core Team'>
+
+    <Package Id='*' Keywords='Installer'
+      Description="Moses is a statistical machine translation system that allows you to automatically train translation models for any language pair."
+      Comments='This installer only contains Mosese decoder and sample models for Windows.' Manufacturer='Moses Core Team'
+      InstallerVersion='100' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
+
+    <Media Id='1' Cabinet='MosesDecoder.cab' EmbedCab='yes' DiskPrompt="CD-ROM #1" CompressionLevel="high" />
+    <Property Id='DiskPrompt' Value="Moses Decoder 0.91 Installation [1]" />
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFilesFolder' Name='PFiles'>
+        <Directory Id='Moses' Name='Moses'>
+          <Directory Id='INSTALLDIR' Name='MosesDecoder0.91'>
+
+            <Component Id='MosesCmdExecutable' Guid='267AF165-F5BA-42DE-A0EC-ED9A215CAB12'>
+              <File Id='MosesCmdEXE' Name='moses-cmd.exe' DiskId='1' Source='moses-cmd.exe' KeyPath='yes'/>
+            </Component>
+			
+			<Component Id='ProcessPhraseTableExecutable' Guid='A79E485C-6660-4CD4-8BA6-D70AD795B1D1'>
+              <File Id='ProcessPhraseTableEXE' Name='processPhraseTable.exe' DiskId='1' Source='processPhraseTable.exe' KeyPath='yes'/>
+            </Component>
+
+			<Component Id='ProcessLexicalTableExecutable' Guid='0670AA63-1D7E-4F21-A3AB-46BC6E2A4FCC'>
+              <File Id='ProcessLexicalTableEXE' Name='processLexicalTable.exe' DiskId='1' Source='processLexicalTable.exe' KeyPath='yes'/>
+            </Component>
+
+			<Component Id='BuildBinaryExecutable' Guid='BC2B42BA-D3B3-4E35-9766-E95A1658FECC'>
+              <File Id='BuildBinaryEXE' Name='build_binary.exe' DiskId='1' Source='build_binary.exe' KeyPath='yes'/>
+            </Component>
+
+            <Component Id='msvcp110DLL' Guid='7EAE8C25-F443-4291-B8EA-2024F9620002'>
+              <File Id='msvcp110DLL' Name='msvcp110.dll' DiskId='1' Source='msvcp110.dll' KeyPath='yes' />
+            </Component>
+			
+			<Component Id='msvcr110DLL' Guid='565E7353-5A56-4D92-B1BE-6AB7DF64B29D'>
+              <File Id='msvcr110DLL' Name='msvcr110.dll' DiskId='1' Source='msvcr110.dll' KeyPath='yes' />
+            </Component>
+
+			<Component Id='vccorlib110DLL' Guid='B9A29C30-9558-4191-824F-976543A081D7'>
+              <File Id='vccorlib110DLL' Name='vccorlib110.dll' DiskId='1' Source='vccorlib110.dll' KeyPath='yes' />
+            </Component>
+
+            <Component Id='Manual' Guid='67334D8D-AD0F-4DAA-900F-AE4733E32A2E'>
+              <File Id='Manual' Name='manual.pdf' DiskId='1' Source='manual.pdf' KeyPath='yes' >
+                <Shortcut Id="startmenuManual" Directory="ProgramMenuDir" Name="Moses Manual" Advertise="yes" Icon="manual.ico" />
+              </File>
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+
+      <Directory Id="ProgramMenuFolder" Name="Programs">
+        <Directory Id="ProgramMenuDir" Name="Moses">
+          <Component Id="ProgramMenuDir" Guid="4EE418FC-C918-42ED-801B-D3C216F1296D">
+			<RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+			<RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='Path' Type='string' Value='[INSTALLDIR]' KeyPath='yes'/>
+          </Component>
+        </Directory>
+      </Directory>
+
+      <Directory Id="DesktopFolder" Name="Desktop" />
+    </Directory>
+	
+	<DirectoryRef Id="ProgramMenuDir">
+		<Component Id="StartCmdExeShortCut" Guid="8A8E10DF-6E59-474B-8B0B-AF216F23E3B1">
+				<Shortcut Id="StartCmdExeMenuShortCut" 
+					  Name="Start Command Prompt in Moses Installation Directory"
+					  Directory="ProgramMenuDir"
+					  Target="[SystemFolder]cmd.exe"
+					  WorkingDirectory='INSTALLDIR'/>
+				<RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]\Shortcuts' Name="cmd" Type='integer' Value='1' KeyPath='yes'/>
+		</Component>
+		
+		<Component Id="Uninstallation" Guid="6235C8A0-7D8A-4DAD-BC62-4B9F10BDCDB3">
+				<Shortcut Id="UninstallationShortCut" 
+					  Name="Uninstall"
+					  Directory="ProgramMenuDir"
+					  Target="[SystemFolder]msiexec.exe"
+					  Arguments="/x [ProductCode]"
+					  WorkingDirectory='INSTALLDIR'/>
+				<RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]\Shortcuts' Name="uninstall" Type='integer' Value='1' KeyPath='yes'/>
+		</Component>
+	</DirectoryRef>
+	
+	<DirectoryRef Id="TARGETDIR">
+		<Component Id="FrEnModel" Guid="18087E5B-A5B3-4837-8989-130D4AEB3676">
+			<RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]\Models' Name="FrEnModel" Type='integer' Value='1' KeyPath='yes'/>
+		</Component>
+		
+		<!--
+		<Component Id="DeEnModel" Guid="188A6359-5914-4047-A9FD-A5A3C4F3F1DA">
+			<RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]\Models' Name="DeEnModel" Type='integer' Value='1' KeyPath='yes'/>
+		</Component>
+		-->
+	</DirectoryRef>
+
+    <Feature Id='Complete' Title='Moses Decoder 0.91' Description='The complete package.'
+      Display='expand' Level='1' ConfigurableDirectory='INSTALLDIR'>
+      <Feature Id='MainProgram' Title='Decoder' Description='Decoder and toolsets.' Level='1'>
+        <ComponentRef Id='MosesCmdExecutable' />
+        <ComponentRef Id='ProcessPhraseTableExecutable' />
+		<ComponentRef Id='ProcessLexicalTableExecutable' />
+		<ComponentRef Id='BuildBinaryExecutable' />
+		<ComponentRef Id='msvcp110DLL' />
+		<ComponentRef Id='msvcr110DLL' />
+		<ComponentRef Id='vccorlib110DLL' />
+		<ComponentRef Id='ProgramMenuDir' />
+		<ComponentRef Id="StartCmdExeShortCut" />
+		<ComponentRef Id="Uninstallation" />
+      </Feature>
+
+      <Feature Id='Documentation' Title='Description' Description='Moses manual.' Level='1'>
+        <ComponentRef Id='Manual' />
+      </Feature>
+	  
+	  <Feature Id='Models' Title='Models' Description='Optional models to install.' Level='1000'>
+		<Feature Id='FrEnModelFeature' Title='French to English Model' Description='French to English Model' Level='1000'>
+			<ComponentRef Id='FrEnModel' />
+		</Feature>
+		<!--
+		<Feature Id='DeEnModelFeature' Title='German to English Model' Description='German to English Model' Level='1000'>
+			<ComponentRef Id='DeEnModel' />
+		</Feature>
+		-->
+      </Feature>
+	  
+    </Feature>
+	
+	<UI Id='Mondo'>
+		<UIRef Id="WixUI_Mondo" />
+		<UIRef Id="WixUI_ErrorProgressText" />
+		<Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="SetupTypeDlg" Order="3">1</Publish>
+		<Publish Dialog="SetupTypeDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="3">1</Publish>
+	</UI>
+
+	<!--
+    <UIRef Id="WixUI_Mondo" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+	-->
+	
+	<WixVariable Id="WixUILicenseRtf" Value="lgpl-3.0.rtf" />
+	
+	<Icon Id="manual.ico" SourceFile="icons\manual.ico" />
+
+  </Product>
+</Wix>
