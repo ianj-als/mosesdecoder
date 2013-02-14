@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <iostream>
 
+<<<<<<< HEAD
 
 #include "ChartManager.h"
 #include "Hypothesis.h"
@@ -17,6 +18,23 @@
 #include <xmlrpc-c/registry.hpp>
 #include <xmlrpc-c/server_abyss.hpp>
 
+=======
+
+#include "moses/ChartManager.h"
+#include "moses/Hypothesis.h"
+#include "moses/Manager.h"
+#include "moses/StaticData.h"
+#include "moses/TranslationModel/PhraseDictionaryDynSuffixArray.h"
+#include "moses/TranslationSystem.h"
+#include "moses/TreeInput.h"
+#include "moses/LMList.h"
+#include "moses/LM/ORLM.h"
+
+#include <xmlrpc-c/base.hpp>
+#include <xmlrpc-c/registry.hpp>
+#include <xmlrpc-c/server_abyss.hpp>
+
+>>>>>>> upstream/master
 using namespace Moses;
 using namespace std;
 
@@ -176,8 +194,7 @@ public:
     stringstream out, graphInfo, transCollOpts;
     map<string, xmlrpc_c::value> retData;
 
-    SearchAlgorithm searchAlgorithm = staticData.GetSearchAlgorithm();
-    if (searchAlgorithm == ChartDecoding) {
+    if (staticData.IsChart()) {
        TreeInput tinput; 
         const vector<FactorType> &inputFactorOrder =
           staticData.GetInputFactorOrder();
@@ -310,7 +327,7 @@ public:
           toptXml["start"] =  xmlrpc_c::value_int(startPos);
           toptXml["end"] =  xmlrpc_c::value_int(endPos);
           vector<xmlrpc_c::value> scoresXml;
-          ScoreComponentCollection scores = topt->GetScoreBreakdown();
+          const std::valarray<FValue> &scores = topt->GetScoreBreakdown().getCoreFeatures();
           for (size_t j = 0; j < scores.size(); ++j) {
             scoresXml.push_back(xmlrpc_c::value_double(scores[j]));
           }

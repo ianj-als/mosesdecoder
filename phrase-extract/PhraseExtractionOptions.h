@@ -43,10 +43,10 @@ class PhraseExtractionOptions {
   REO_MODEL_TYPE hierType;
   bool orientationFlag;
   bool translationFlag;
-  bool sentenceIdFlag; //create extract file with sentence id
   bool includeSentenceIdFlag; //include sentence id in extract file
   bool onlyOutputSpanInfo;
   bool gzOutput;
+  std::string instanceWeightsFile; //weights for each sentence
 
 public:  
   PhraseExtractionOptions(const int initmaxPhraseLength):
@@ -60,7 +60,6 @@ public:
             hierType(REO_MSD),
             orientationFlag(false),
             translationFlag(true),
-            sentenceIdFlag(false),
             includeSentenceIdFlag(false),
             onlyOutputSpanInfo(false),
             gzOutput(false){}
@@ -93,18 +92,19 @@ public:
     void initTranslationFlag(const bool inittranslationFlag){
         translationFlag=inittranslationFlag;
     }
-    void initSentenceIdFlag(const bool initsentenceIdFlag){
-        sentenceIdFlag=initsentenceIdFlag;
-    }
     void initIncludeSentenceIdFlag(const bool initincludeSentenceIdFlag){
-        sentenceIdFlag=initincludeSentenceIdFlag;
+        includeSentenceIdFlag=initincludeSentenceIdFlag;
     }
     void initOnlyOutputSpanInfo(const bool initonlyOutputSpanInfo){
         onlyOutputSpanInfo= initonlyOutputSpanInfo;
     } 
     void initGzOutput (const bool initgzOutput){
         gzOutput= initgzOutput;
-    } 
+    }
+    void initInstanceWeightsFile(const char* initInstanceWeightsFile) {
+      instanceWeightsFile = std::string(initInstanceWeightsFile);
+    }
+     
     // functions for getting values
     bool isAllModelsOutputFlag() const {
         return allModelsOutputFlag;
@@ -133,9 +133,6 @@ public:
     bool isTranslationFlag() const {
         return translationFlag;
     }
-    bool isSentenceIdFlag() const {
-        return sentenceIdFlag;
-    }
     bool isIncludeSentenceIdFlag() const {
         return includeSentenceIdFlag;
     }
@@ -144,7 +141,10 @@ public:
     } 
     bool isGzOutput () const {
         return gzOutput;
-   } 
+    }
+    std::string getInstanceWeightsFile() const {
+      return instanceWeightsFile;
+    }
 };
 
 }
