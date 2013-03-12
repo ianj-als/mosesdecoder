@@ -48,6 +48,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "rule.pb.h"
 #endif
 
+#include "util/exception.hh"
+
 using namespace std;
 
 namespace Moses
@@ -799,8 +801,11 @@ size_t Manager::OutputFeatureValuesForSLF(size_t index, bool zeros, const Hypoth
 size_t Manager::OutputFeatureValuesForHypergraph(size_t index, const Hypothesis* hypo, const FeatureFunction* ff, std::ostream &outputSearchGraphStream) const
 {
 
-  const ScoreComponentCollection& scoreCollection = hypo->GetScoreBreakdown(); 
-
+  ScoreComponentCollection scoreCollection = hypo->GetScoreBreakdown(); 
+  const Hypothesis *prevHypo = hypo->GetPrevHypo();
+  if (prevHypo) {
+    scoreCollection.MinusEquals( prevHypo->GetScoreBreakdown() );
+  }
   vector<float> featureValues = scoreCollection.GetScoresForProducer(ff);
   size_t numScoreComps = featureValues.size();
 
@@ -821,67 +826,118 @@ void Manager::OutputSearchGraphAsHypergraph(long translationId, std::ostream &ou
   vector<SearchGraphNode> searchGraph;
   GetSearchGraph(searchGraph);
 
-  long numNodes = 0;
-
-  map<int,int> nodes;
+  map<int,int> mosesIDToHypergraphID;
+  // map<int,int> hypergraphIDToMosesID;
   set<int> terminalNodes;
-  multimap<int,int> nodeToLines;
+  multimap<int,int> hypergraphIDToArcs;
 
-  for (size_t arcNumber = 0, size=searchGraph.size(); arcNumber < size; ++arcNumber) {
-
-    // Record that this arc ends at this node
-    nodeToLines.insert(pair<int,int>(numNodes,arcNumber));
-
-    int hypothesisID = searchGraph[arcNumber].hypo->GetId();
-    if (nodes.count(hypothesisID) == 0) {
-      
-      nodes[hypothesisID] = numNodes;
-      numNodes += 1;
-
-      bool terminalNode = (searchGraph[arcNumber].forward == -1);
-      if (terminalNode) {
-	// Final arc to end node, representing the end of the sentence </s>
-	terminalNodes.insert(numNodes);
+  long numNodes = 0;
+  long endNode = 0;
+  {
+    long hypergraphHypothesisID = 0;
+    for (size_t arcNumber = 0, size=searchGraph.size(); arcNumber < size; ++arcNumber) {
+    
+      // Get an id number for the previous hypothesis
+      const Hypothesis *prevHypo = searchGraph[arcNumber].hypo->GetPrevHypo();
+      if (prevHypo!=NULL) {
+	int mosesPrevHypothesisID = prevHypo->GetId();
+	if (mosesIDToHypergraphID.count(mosesPrevHypothesisID) == 0) {
+	  mosesIDToHypergraphID[mosesPrevHypothesisID] = hypergraphHypothesisID;
+	  //	hypergraphIDToMosesID[hypergraphHypothesisID] = mosesPrevHypothesisID;
+	  hypergraphHypothesisID += 1;
+	}
       }
+
+      // Get an id number for this hypothesis
+      int mosesHypothesisID;
+      if (searchGraph[arcNumber].recombinationHypo) {
+	mosesHypothesisID = searchGraph[arcNumber].recombinationHypo->GetId();
+      } else {
+	mosesHypothesisID = searchGraph[arcNumber].hypo->GetId();
+      }
+
+      if (mosesIDToHypergraphID.count(mosesHypothesisID) == 0) {
+      
+	mosesIDToHypergraphID[mosesHypothesisID] = hypergraphHypothesisID;
+	//      hypergraphIDToMosesID[hypergraphHypothesisID] = mosesHypothesisID;
+
+	bool terminalNode = (searchGraph[arcNumber].forward == -1);
+	if (terminalNode) {
+	  // Final arc to end node, representing the end of the sentence </s>
+	  terminalNodes.insert(hypergraphHypothesisID);
+	}
+
+	hypergraphHypothesisID += 1;
+      }
+
+      // Record that this arc ends at this node
+      hypergraphIDToArcs.insert(pair<int,int>(mosesIDToHypergraphID[mosesHypothesisID],arcNumber));
+
     }
+    
+    // Unique end node
+    endNode = hypergraphHypothesisID;
+    //    mosesIDToHypergraphID[hypergraphHypothesisID] = hypergraphHypothesisID;
+    numNodes = endNode + 1;
 
   }
   
-  // Unique end node
-  nodes[numNodes] = numNodes;
-  numNodes += 1;
 
   long numArcs = searchGraph.size() + terminalNodes.size();
 
   // Print number of nodes and arcs
   outputSearchGraphStream << numNodes << " " << numArcs << endl;
 
-  for (int nodeNumber=0; nodeNumber <= numNodes; nodeNumber+=1) {
-
-    size_t count = nodeToLines.count(nodeNumber);
+  for (int hypergraphHypothesisID=0; hypergraphHypothesisID < endNode; hypergraphHypothesisID+=1) {
+    //    int mosesID = hypergraphIDToMosesID[hypergraphHypothesisID];
+    size_t count = hypergraphIDToArcs.count(hypergraphHypothesisID);
     if (count > 0) {
       outputSearchGraphStream << count << endl;
 
-      pair<multimap<int,int>::iterator, multimap<int,int>::iterator> range = nodeToLines.equal_range(nodeNumber);
+      pair<multimap<int,int>::iterator, multimap<int,int>::iterator> range =
+	hypergraphIDToArcs.equal_range(hypergraphHypothesisID);
       for (multimap<int,int>::iterator it=range.first; it!=range.second; ++it) {
 	int lineNumber = (*it).second;
 	const Hypothesis *thisHypo = searchGraph[lineNumber].hypo;
+	int mosesHypothesisID;// = thisHypo->GetId();
+	if (searchGraph[lineNumber].recombinationHypo) {
+	  mosesHypothesisID = searchGraph[lineNumber].recombinationHypo->GetId();
+	} else {
+	  mosesHypothesisID = searchGraph[lineNumber].hypo->GetId();
+	}
+	//	int actualHypergraphHypothesisID = mosesIDToHypergraphID[mosesHypothesisID];
+	UTIL_THROW_IF(
+		      (hypergraphHypothesisID != mosesIDToHypergraphID[mosesHypothesisID]),
+		      util::Exception,
+		      "Error while writing search lattice as hypergraph for sentence " << translationId << ". " <<
+		      "Moses node " << mosesHypothesisID << " was expected to have hypergraph id " << hypergraphHypothesisID <<
+		      ", but actually had hypergraph id " << mosesIDToHypergraphID[mosesHypothesisID] << 
+		      ". There are " << numNodes << " nodes in the search lattice."
+		      );
+
 	const Hypothesis *prevHypo = thisHypo->GetPrevHypo();
 	if (prevHypo==NULL) {
 	  outputSearchGraphStream << "<s> ||| " << endl;
 	} else {
-	int startNode = nodes[prevHypo->GetId()];
-      
-	const TargetPhrase &targetPhrase = thisHypo->GetCurrTargetPhrase();
-	int targetWordCount = targetPhrase.GetSize();
+	  int startNode = mosesIDToHypergraphID[prevHypo->GetId()];
 
-	outputSearchGraphStream << "[" << startNode << "]";
-	for (int targetWordIndex=0; targetWordIndex<targetWordCount; targetWordIndex+=1) {
-	  outputSearchGraphStream << " " << targetPhrase.GetWord(targetWordIndex);
-	}
-	outputSearchGraphStream << " ||| ";
-	OutputFeatureValuesForHypergraph(thisHypo, outputSearchGraphStream);
-	outputSearchGraphStream << endl;
+	  UTIL_THROW_IF(
+			(startNode >= hypergraphHypothesisID),
+			util::Exception,
+			"Error while writing search lattice as hypergraph for sentence" << translationId << ". " <<
+			"The nodes must be output in topological order. The code attempted to violate this restriction."
+			);
+
+	  const TargetPhrase &targetPhrase = thisHypo->GetCurrTargetPhrase();
+	  int targetWordCount = targetPhrase.GetSize();
+
+	  outputSearchGraphStream << "[" << startNode << "]";
+	  for (int targetWordIndex=0; targetWordIndex<targetWordCount; targetWordIndex+=1) {
+	    outputSearchGraphStream << " " << targetPhrase.GetWord(targetWordIndex);
+	  }
+	  outputSearchGraphStream << " ||| ";
+	  OutputFeatureValuesForHypergraph(thisHypo, outputSearchGraphStream);
+	  outputSearchGraphStream << endl;
 	}
 
       }

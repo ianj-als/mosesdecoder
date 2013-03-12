@@ -37,8 +37,7 @@ def initialise(config):
         logfile = workdir + os.sep + 'log'
         
         #the command
-        cmd = '%(train_model_perl)s -root-dir %(workdir)s -corpus %(infilename)s -f %(src_lang)s -e %(trg_lang)s -alignment grow-diag-final-and -reordering msd-bidirectional-fe -lm 0:5:%(dummy_lmfile)s:0 -bin-dir %(external_bin)s 2> %(logfile)s'
-
+        cmd = '%(train_model_perl)s -root-dir %(workdir)s -corpus %(infilename)s -f %(src_lang)s -e %(trg_lang)s -alignment grow-diag-final-and -reordering msd-bidirectional-fe -lm 0:5:%(dummy_lmfile)s:0 -external-bin-dir %(external_bin)s 2> %(logfile)s'
         cmd = cmd % locals()
 
         pipe = subprocess.Popen(cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, shell=True)
