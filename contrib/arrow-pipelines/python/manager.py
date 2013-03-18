@@ -20,7 +20,7 @@ logger = logging.getLogger("manager")
 
 
 # Build the pipeline components
-def build_components(components, configuration, executor):
+def build_components(components, component_configuration, executor):
   pipeline_components = dict()
   pipeline_configuration = dict()
 
@@ -28,10 +28,10 @@ def build_components(components, configuration, executor):
     logger.info("Loading [%s] component from [%s]..." % (component_id, module_name))
 
     module = __import__(module_name, fromlist = ['configure', 'initialise'])
-    
+
     # Component builds its own configuration object
     config_func = getattr(module, 'configure')
-    component_config = config_func(configuration)
+    component_config = config_func(component_configuration[component_id])
     pipeline_configuration.update(component_config)
 
     # Now build the component
@@ -58,44 +58,58 @@ def build_components(components, configuration, executor):
 
 # Go!
 def main(src_lang, trg_lang, src_filename, trg_filename):
+  # Environment required
+  moses_installation_dir = os.environ['MOSES_HOME']
+  irstlm_installation_dir = os.environ['IRSTLM']
+  giza_installation_dir = os.environ['GIZA_HOME']
+
   # Global configuration
   # One day, this configuration shall be constructed from
   # command line options, or a properties file.
-  configuration = {
-    'moses_installation_dir': os.environ['MOSES_HOME'],
-    'irstlm_installation_dir': os.environ['IRSTLM'],
-    'giza_installation_dir': os.environ['GIZA_HOME'],
-    'src_lang': src_lang,
-    'src_tokenisation_dir': './tokenisation',
-    'trg_lang': trg_lang,
-    'trg_tokenisation_dir': './tokenisation',
-    'segment_length_limit': 60,
-    'irstlm_smoothing_method': 'improved-kneser-ney',
-    'language_model_directory': './language-model',
-    'translation_model_directory': './translation-model',
-    'mert_working_directory': './mert',
-    'evaluation_data_size': 100,
-    'development_data_size': 100
+  component_configuration = {
+    'src_tokenizer' : {'language' : src_lang,
+                       'tokenisation_dir' : './tokenisation',
+                       'moses_installation_dir' : moses_installation_dir},
+    'trg_tokenizer' : { 'language' : trg_lang,
+                        'tokenisation_dir' : './tokenisation',
+                        'moses_installation_dir' : moses_installation_dir},
+    'cleanup' : {'segment_length_limit': 60},
+    'irstlm_build' : {'irstlm_installation_dir' : irstlm_installation_dir,
+                      'irstlm_smoothing_method': 'improved-kneser-ney',
+                      'language_model_directory': './language-model'},
+    'mert' : {'source_language' : src_lang,
+              'target_language' : trg_lang,
+              'moses_installation_dir' : moses_installation_dir,
+              'mert_working_directory' : './mert'},
+    'model_training' : {'source_language' : src_lang,
+                        'target_language' : trg_lang,
+                        'translation_model_directory' : './translation-model',
+                        'moses_installation_dir' : moses_installation_dir,
+                        'giza_installation_dir' : giza_installation_dir},
+    'data_split' : {'evaluation_data_size' : 100,
+                    'development_data_size' : 100}
   }
 
   # The modules to load
   # In the future, the components shall be specified in some kind
   # pipeline description file.
   component_modules = {
-    'src_tokenizer': 'training.components.tokenizer.src_tokenizer',
-    'trg_tokenizer': 'training.components.tokenizer.trg_tokenizer',
-    'cleanup': 'training.components.cleanup.cleanup',
-    'data_split': 'training.components.data_split.data_split',
-    'irstlm_build': 'training.components.irstlm_build.irstlm_build',
-    'model_training': 'training.components.model_training.model_training',
-    'mert': 'training.components.mert.mert'
+    'src_tokenizer' : 'training.components.tokenizer.tokenizer',
+    'trg_tokenizer' : 'training.components.tokenizer.tokenizer',
+    'cleanup' : 'training.components.cleanup.cleanup',
+    'data_split' : 'training.components.data_split.data_split',
+    'irstlm_build' : 'training.components.irstlm_build.irstlm_build',
+    'model_training' : 'training.components.model_training.model_training',
+    'mert' : 'training.components.mert.mert'
   }
 
   # The thread pool
   executor = ThreadPoolExecutor(max_workers = 3)
 
   # Phew, build the required components
-  components, component_config = build_components(component_modules, configuration, executor)
+  components, component_config = build_components(component_modules,
+                                                  component_configuration,
+                                                  executor)
 
   #
   # Wire up components
@@ -116,7 +130,8 @@ def main(src_lang, trg_lang, src_filename, trg_filename):
                                                            'trg_language_model_filename': b['compiled_lm_filename']})
 
   # The complete tokenisation component
-  tokenisation_component = (components['src_tokenizer'] & components['trg_tokenizer']) >> \
+  tokenisation_component = ((components['src_tokenizer'] >> cons_dictionary_wire({'tokenized_filename' : 'src_filename'})) ** \
+                            (components['trg_tokenizer'] >> cons_dictionary_wire({'tokenized_filename' : 'trg_filename'}))) >> \
                            irstlm_build_component.second() >> \
                            cons_unsplit_wire(lambda t, b: {'src_filename': t['tokenised_src_filename'],
                                                            'trg_filename': b['tokenised_trg_filename'],
@@ -155,7 +170,9 @@ def main(src_lang, trg_lang, src_filename, trg_filename):
   #
   # The whole pipeline
   #
-  pipeline = tokenisation_component >> \
+  pipeline = cons_split_wire() >> \
+             (cons_dictionary_wire({'src_filename' : 'filename'}) ** cons_dictionary_wire({'trg_filename' : 'filename'})) >> \
+             tokenisation_component >> \
              cons_split_wire() >> \
              (cleanup_datasplit_component >> translation_model_component).first() >> \
              cons_unsplit_wire(lambda t, b: {'moses_ini_file': t['moses_ini_file'],

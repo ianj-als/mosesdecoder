@@ -6,15 +6,14 @@ from pypeline.helpers.helpers import cons_function_component
 
 def configure(args):
     result = {}
-    result['src_lang'] = args['src_lang']
-    result['trg_lang'] = args['trg_lang']
+    result['src_lang'] = args['source_language']
+    result['trg_lang'] = args['target_language']
     result['moses_installation_dir'] = args['moses_installation_dir']
     result['external_bin_dir'] = args['giza_installation_dir']
     result['model_directory'] = args['translation_model_directory']
     return result
 
 def initialise(config):
-
     def process(a, s):
         infilename = os.path.abspath(a['training_data_filename'])
         workdir = os.path.abspath(config['model_directory'])

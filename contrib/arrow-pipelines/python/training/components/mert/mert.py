@@ -6,8 +6,8 @@ from pypeline.helpers.helpers import cons_function_component
 
 def configure(args):
     result = {}
-    result['src_lang'] = args['src_lang']
-    result['trg_lang'] = args['trg_lang']
+    result['src_lang'] = args['source_language']
+    result['trg_lang'] = args['target_language']
     result['moses_installation_dir'] = args['moses_installation_dir']
     result['mert_working_dir'] = args['mert_working_directory']
     return result

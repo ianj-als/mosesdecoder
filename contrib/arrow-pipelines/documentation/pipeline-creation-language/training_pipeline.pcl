@@ -1,0 +1,70 @@
+#
+# Import all of the components to be composed
+#
+import com.capitati.smartmate.components.src_trg_tokenizer as tokeniser
+import com.capitati.smartmate.components.translation_model_training as model_training
+import com.capitati.smartmate.components.irstlm_build as lang_model
+import com.capitati.smartmate.components.mert as mert
+
+#
+# Component definition
+#
+#                                                         State: { model_training.max_segment_length,
+#                                                                  model_training.corpus.[development_size|evaluation_size],
+#                                                                  model_training.[src|trg].language,
+#                                                                  model_training.method.[alignment|reordering], {moses_ini_filename,
+#                                                                  model_training.giza.installation,              evaluation_data_filename}
+# {src_filename,    {tokenised_src_filename,                       model_training.translation_model.dir}          |
+#  trg_filename}     tokenised_trg_filename}             +-----------------------------------------+   +-------+  |          {moses_ini_filename}
+#  |  +-------+    +-------+    +-------+ |  +-------+   | tokenised_src_filename -> src_filename, |   | Model |  V    +-------+               |
+#  V  |       +--->+ Src/  +--->+       | V  |       +-->+ tokenised_trg_filename -> trg_filename  +-->+ Train +------>+       |      +------+ V
+# --->+ Split |    | Trg   |    | Merge +--->+ Split |   +-----------------------------------------+   +-------+       | Merge +----->+ MERT +--->
+#     |       +--->+ Token +--->+       |    |       +--\  +------------------------------------------+   +--------+   |       |  ^   +------+
+#     +-------+    +-------+    +-------+    +-------+  \->+ tokenised_trg_filename -> input_filename +-->+ IRSTLM +-->+       |  |
+# State: {tokeniser.[src|trg].language,                    +------------------------------------------+   +--------+ ^ +-------+  |
+#         tokeniser.[src|trg].tokeniser_dir                               State: {irstlm_installation_dir::String,   |            |
+#         tokeniser.moses.installation}                                           irstlm_smoothing_method::String,   |            |
+#                                                                                 language_model_directory}          |            |
+#                                                                                                                    |            |
+#                                                           {lm_filename, compiled_lm_filename, add_start_end_filename}           |
+#                                                                                                                                 |
+#                                                            {moses_ini_file, evaluation_data_filename, trg_language_model_filename,
+#                                                             trg_language_model_order, trg_language_model_type}
+#
+component src_trg_tokeniser
+  inputs src_filename, trg_filename
+  output moses_ini_file
+  configuration source_language,
+                target_language,
+                max_segment_length,
+                corpus_developement_size,
+                corpus_evaluation_size,
+                alignment_method,
+                reordering_method,
+                tokenisation_directory,
+                translation_model_directory,
+                language_model_directory,
+                moses_installation_directory,
+                giza_installation_directory,
+                irstlm_installation_directory
+  declare
+    tokeniser := new tokeniser with
+      source_language -> tokeniser.src.language
+      target_language -> tokeniser.trg.language
+      tokenisation_directory -> tokeniser.src.tokeniser_dir
+      tokenisation_directory -> tokeniser.trg.tokeniser_dir
+      moses_installation_directory -> tokeniser.moses.installation
+    model_training := new model_training with
+      max_segment_length -> model_training.max_segment_length
+      corpus_development_size -> model_training.corpus.development_size
+      corpus_evaluation_size -> model_training.corpus.evaluation_size
+  as
+    cleanup >>>
+    wire cleaned_src_filename -> src_filename,
+         clean_trg_filename -> trg_filename >>>
+    data_split >>>
+    split >>>
+    first model_training >>>
+    merge top[moses_ini_filename] -> moses_ini_filename,
+          bottom[eval_src_filename] -> evaluation_data_filename
+

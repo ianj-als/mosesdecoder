@@ -22,7 +22,7 @@ def initialise(config):
     bits = filename.split(".")
     last = bits.pop()
     lang_code = bits.pop()
-    
+  
     bits.append(last)
     bits.append(data_set)
     bits.append(lang_code)
