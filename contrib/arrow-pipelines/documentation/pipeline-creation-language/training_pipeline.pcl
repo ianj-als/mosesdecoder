@@ -41,9 +41,11 @@ component src_trg_tokeniser
                 corpus_evaluation_size,
                 alignment_method,
                 reordering_method,
+                smoothing_method,
                 tokenisation_directory,
                 translation_model_directory,
                 language_model_directory,
+                mert_directory,
                 moses_installation_directory,
                 giza_installation_directory,
                 irstlm_installation_directory
@@ -58,13 +60,25 @@ component src_trg_tokeniser
       max_segment_length -> model_training.max_segment_length
       corpus_development_size -> model_training.corpus.development_size
       corpus_evaluation_size -> model_training.corpus.evaluation_size
+    irstlm := new lang_model with
+      irstlm_installation_directory -> irstlm_installation_dir
+      smoothing_method -> irstlm_smoothing_method
+      language_model_directory -> language_model_directory
+    mert := new mert with
+      source_language -> source_language
+      target_language -> target_language
+      moses_installation_directory -> moses_installation_dir
+      mert_directory -> mert_working_directory
   as
-    cleanup >>>
-    wire cleaned_src_filename -> src_filename,
-         clean_trg_filename -> trg_filename >>>
-    data_split >>>
-    split >>>
-    first model_training >>>
+    (wire src_filename -> filename &&& wire trg_filename -> filename) >>>
+    merge top[tokenised_filename] -> tokenised_src_filename,
+          bottom[tokenised_filename] -> tokenised_trg_filename >>>
+    (wire tokenised_src_filename -> src_filename,
+          tokenised_trg_filename -> trg_filename >>> model_training) &&&
+    (wire tokenised_trg_filename -> input_filename >>> irstlm) >>>
     merge top[moses_ini_filename] -> moses_ini_filename,
-          bottom[eval_src_filename] -> evaluation_data_filename
-
+          top[evaluation_data_filename] -> evaluation_data_filename,
+          bottom[compiled_lm_filename] -> trg_language_model_filename,
+          3 -> trg_language_model_order,
+          9 -> trg_language_model_type >>>
+    mert
