@@ -10,17 +10,21 @@ import ply.lex as lex
 #
 reserved = {
     'as' : 'AS',
+    'bottom' : 'BOTTOM',
     'component' : 'COMPONENT',
     'configuration' : 'CONFIGURATION',
     'declare' : 'DECLARE',
     'first' : 'FIRST',
     'import' : 'IMPORT',
-    'input(s)?' : 'INPUTS',
+    'input' : 'INPUTS',
+    'inputs' : 'INPUTS',
     'merge' : 'MERGE',
     'new' : 'NEW',
-    'output(s)?' : 'OUTPUTS',
+    'output' : 'OUTPUTS',
+    'outputs' : 'OUTPUTS',
     'second' : 'SECOND',
     'split' : 'SPLIT',
+    'top' : 'TOP',
     'wire' : 'WIRE',
     'with' : 'WITH'}
 
@@ -41,6 +45,8 @@ tokens = [
 
 
 class PCLLexer(object):
+    tokens = tokens
+
     literals = ",()[]"
 
     t_ASSIGN = r':='
@@ -94,10 +100,24 @@ class PCLLexer(object):
     def token(self):
         return self.__lexer.token()
 
+    def getLexer(self):
+        return self.__lexer
+
 
 if __name__ == "__main__":
     lexer = PCLLexer(debug = 1)
-    lexer.input(r'''import twat.arse.feck as bum\ncomponent arse\ninputs a, b\noutput c\nconfiguration a,b,c,d\ndeclare a := new arse with a -> b.d.c c -> d\nb := new bum\nas\n(wire a -> b, c -> d &&& wire a -> b) >>> merge top[a] -> bollox, -7 -> v, -7.9e-9 -> arse, "b'o'\"l\"lox" -> bum, "" -> feck >>> arse''')
+    lexer.input(r'''
+    import twat.arse.feck as bum
+    component arse
+    inputs a, b
+    output c
+    configuration a,b,c,d
+    declare
+      a := new arse with a -> b.d.c c -> d
+      b := new bum
+    as
+      (wire a -> b, c -> d &&& wire a -> b) >>>
+      merge top[a] -> bollox, -7 -> v, -7.9e-9 -> arse, "b'o'\"l\"lox" -> bum, "" -> feck >>> arse''')
     while True:
         token = lexer.token()
         if not token:
