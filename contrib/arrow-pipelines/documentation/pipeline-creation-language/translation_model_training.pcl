@@ -37,14 +37,14 @@ component src_trg_tokeniser
     cleanup := new cleanup with
       model_training.max_segment_length -> segment_length
     data_split := new data_split with
-      model_training.corpus.development_size -> development_size
+      model_training.corpus.development_size -> development_size,
       model_training.corpus.evaluation_size -> evaluation_size
     model_training := new model_training with
-      model_training.src.language -> src_language
-      model_training.trg.language -> trg_language
-      model_training.method.alignment -> alignment_method
-      model_training.method.reordering -> reordering_method
-      model_training.giza.installation -> giza_installation_dir
+      model_training.src.language -> src_language,
+      model_training.trg.language -> trg_language,
+      model_training.method.alignment -> alignment_method,
+      model_training.method.reordering -> reordering_method,
+      model_training.giza.installation -> giza_installation_dir,
       model_training.translation_model.dir -> model_directory
   as
     cleanup >>>

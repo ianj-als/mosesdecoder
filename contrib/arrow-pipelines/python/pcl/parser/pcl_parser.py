@@ -77,10 +77,10 @@ def p_opt_with_clause(p):
         p[0] = p[2]
 
 def p_configuration_mappings(p):
-    '''configuration_mappings : mapping configuration_mappings
+    '''configuration_mappings : mapping ',' configuration_mappings
                               | mapping'''
     if len(p) > 2:
-        p[0] = [p[1]] + p[2]
+        p[0] = [p[1]] + p[3]
     else:
         p[0] = [p[1]]
 
@@ -151,8 +151,12 @@ def p_merge_expression(p):
     p[0] = MergeExpression(p.parser.filename, p.lineno(1), p[2])
 
 def p_wire_expression(p):
-    '''wire_expression : WIRE wire_mappings'''
-    p[0] = WireExpression(p.parser.filename, p.lineno(1), p[2])
+    '''wire_expression : WIRE wire_mappings
+                       | WIRE '(' wire_mappings ')' '''
+    if len(p) < 4:
+        p[0] = WireExpression(p.parser.filename, p.lineno(1), p[2])
+    else:
+        p[0] = WireExpression(p.parser.filename, p.lineno(1), tuple(p[3]))
 
 def p_identifier_expression(p):
     '''identifier_expression : identifier_or_qual_identifier'''
@@ -202,12 +206,12 @@ def p_scalar_or_tuple_identifier_comma_list(p):
         p[0] = p[1]
 
 def p_identifier_comma_list(p):
-    '''identifier_comma_list : IDENTIFIER ',' identifier_comma_list
-                             | IDENTIFIER'''
+    '''identifier_comma_list : identifier_or_qual_identifier ',' identifier_comma_list
+                             | identifier_or_qual_identifier'''
     if len(p) > 2:
-        p[0] = [Identifier(p.parser.filename, p.lineno(1), p[1])] + p[3]
+        p[0] = [p[1]] + p[3]
     else:
-        p[0] = [Identifier(p.parser.filename, p.lineno(1), p[1])]
+        p[0] = [p[1]]
 
 def p_identifier_or_literal(p):
     '''identifier_or_literal : identifier_or_qual_identifier
@@ -226,6 +230,18 @@ def p_literal(p):
     p[0] = Literal(p.parser.filename, p.lineno(1), p[1])
 
 
+class PCLParser(object):
+    def __init__(self, lexer, logger, **kwargs):
+        self.__lexer = lexer
+        self.__logger = logger
+        kwargs['debuglog'] = logger
+        self.__parser = yacc.yacc(**kwargs)
+
+    def parseFile(self, filename, **kwargs):
+        self.__parser.filename = filename
+        f = open(filename, "r")
+        return self.__parser.parse(input = f.read(), lexer = self.__lexer, debug = self.__logger)
+
 if __name__ == '__main__':
     lexer = PCLLexer(debug = 1)
     parser = yacc.yacc()
@@ -240,7 +256,11 @@ if __name__ == '__main__':
           configuration a,b,c,d
           declare
             a := new arse
-            b := new bum with a -> b c -> d
+            b := new bum with a -> b, c -> d
+            irstlm := new lang_model with
+              a -> b,
+              b -> c,
+              c -> d
           as
           a >>> b &&& c *** a >>> wire a -> b, d -> c >>> first (split >>> f >>> merge top[d] -> g, bottom[d] -> f)''',
         lexer = lexer,

@@ -51,23 +51,23 @@ component src_trg_tokeniser
                 irstlm_installation_directory
   declare
     tokeniser := new tokeniser with
-      source_language -> tokeniser.src.language
-      target_language -> tokeniser.trg.language
-      tokenisation_directory -> tokeniser.src.tokeniser_dir
-      tokenisation_directory -> tokeniser.trg.tokeniser_dir
+      source_language -> tokeniser.src.language,
+      target_language -> tokeniser.trg.language,
+      tokenisation_directory -> tokeniser.src.tokeniser_dir,
+      tokenisation_directory -> tokeniser.trg.tokeniser_dir,
       moses_installation_directory -> tokeniser.moses.installation
     model_training := new model_training with
-      max_segment_length -> model_training.max_segment_length
-      corpus_development_size -> model_training.corpus.development_size
+      max_segment_length -> model_training.max_segment_length,
+      corpus_development_size -> model_training.corpus.development_size,
       corpus_evaluation_size -> model_training.corpus.evaluation_size
     irstlm := new lang_model with
-      irstlm_installation_directory -> irstlm_installation_dir
-      smoothing_method -> irstlm_smoothing_method
+      irstlm_installation_directory -> irstlm_installation_dir,
+      smoothing_method -> irstlm_smoothing_method,
       language_model_directory -> language_model_directory
     mert := new mert with
-      source_language -> source_language
-      target_language -> target_language
-      moses_installation_directory -> moses_installation_dir
+      source_language -> source_language,
+      target_language -> target_language,
+      moses_installation_directory -> moses_installation_dir,
       mert_directory -> mert_working_directory
   as
     (wire src_filename -> filename &&& wire trg_filename -> filename) >>>
