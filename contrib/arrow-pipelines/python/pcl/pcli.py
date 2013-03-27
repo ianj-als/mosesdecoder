@@ -28,8 +28,9 @@ if __name__ == '__main__':
     ast = parse_component(sys.argv[1])
     print ast
 
-    pcl_import_path = os.getenv("PCL_IMPORT_PATH", ".")        
-    resolver = ResolverVisitor(pcl_import_path)
+    pcl_import_path = os.getenv("PCL_IMPORT_PATH", ".")
+    python_import_path = os.getenv("PYTHONPATH", ".")
+    resolver = ResolverVisitor(pcl_import_path, python_import_path)
     ast.accept(resolver)
     errors = resolver.get_errors()
     if errors:
