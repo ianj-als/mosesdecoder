@@ -1,11 +1,16 @@
-class Component(object):
+from entity import Entity
+
+class Component(Entity):
     def __init__(self,
+                 filename,
+                 lineno,
                  name,
                  inputs,
                  outputs,
                  configuration,
                  declarations,
                  definition):
+        Entity.__init__(self, filename, lineno)
         self.name = name
         self.inputs = inputs
         self.outputs = outputs
@@ -14,5 +19,5 @@ class Component(object):
         self.definition = definition
 
     def __str__(self):
-        return "<Component: name = [%s], inputs = %s, outputs = %s, configuration = %s, def = %s>" % \
+        return "<Component:\n\tname = [%s],\n\tinputs = %s,\n\toutputs = %s,\n\tconfiguration = %s,\n\tdefinition = %s>" % \
                (self.name, self.inputs, self.outputs, self.configuration, self.definition)

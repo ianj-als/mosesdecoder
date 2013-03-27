@@ -23,12 +23,12 @@ from mappings import Mapping, \
      TopMapping, \
      BottomMapping, \
      LiteralMapping
+from module import Module
 
 
 def p_module(p):
     '''module : imports_list component_definition'''
-    p[0] = {'imports' : p[1],
-            'definition' : p[2]}
+    p[0] = Module(p.parser.filename, p.lineno(1), p[1], p[2])
 
 def p_imports_list(p):
     '''imports_list : import_spec imports_list
@@ -39,12 +39,12 @@ def p_imports_list(p):
         p[0] = [p[1]]
 
 def p_import_spec(p):
-    '''import_spec : IMPORT QUALIFIED_IDENTIFIER AS IDENTIFIER'''
+    '''import_spec : IMPORT identifier_or_qual_identifier AS IDENTIFIER'''
     p[0] = Import(p.parser.filename, p.lineno(1), p[2], p[4])
 
 def p_component_definition(p):
     '''component_definition : COMPONENT IDENTIFIER INPUTS scalar_or_tuple_identifier_comma_list OUTPUTS scalar_or_tuple_identifier_comma_list opt_configuration opt_declarations AS component_body_expression'''
-    p[0] = Component(p[2], p[4], p[6], p[7], p[8], p[10])
+    p[0] = Component(p.parser.filename, p.lineno(1), p[2], p[4], p[6], p[7], p[8], p[10])
 
 def p_opt_configuration(p):
     '''opt_configuration : CONFIGURATION identifier_comma_list
@@ -240,7 +240,9 @@ class PCLParser(object):
     def parseFile(self, filename, **kwargs):
         self.__parser.filename = filename
         f = open(filename, "r")
-        return self.__parser.parse(input = f.read(), lexer = self.__lexer, debug = self.__logger)
+        return self.__parser.parse(input = f.read(),
+                                   lexer = self.__lexer,
+                                   debug = self.__logger)
 
 if __name__ == '__main__':
     lexer = PCLLexer(debug = 1)

@@ -16,7 +16,7 @@ class Identifier(Entity):
 
     def __str__(self):
          return "<Identifier: identifier = [%s], entity = %s>" % \
-                (self.value, super(Literal, self).__str__())
+                (self.identifier, super(Identifier, self).__str__())
 
 class Expression(Entity):
     def __init__(self, filename, lineno):
