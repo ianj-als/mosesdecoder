@@ -18,6 +18,15 @@ class Identifier(Entity):
          return "<Identifier: identifier = [%s], entity = %s>" % \
                 (self.identifier, super(Identifier, self).__str__())
 
+class IdentifierCollection(Entity):
+    def __init__(self, filename, lineno, identifier_collection):
+        Entity.__init__(self, filename, lineno)
+        self.collection = identifier_collection
+
+    def __str__(self):
+        return "<IdentifierCollection: collection = %s, entity = %s>" % \
+               (self.collection, super(IdentifierCollection, self).__str__())
+
 class Expression(Entity):
     def __init__(self, filename, lineno):
         Entity.__init__(self, filename, lineno)

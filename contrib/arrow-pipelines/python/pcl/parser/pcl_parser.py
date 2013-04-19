@@ -9,6 +9,7 @@ from component import Component
 from declaration import Declaration
 from expressions import Literal, \
      Identifier, \
+     IdentifierCollection, \
      CompositionExpression, \
      ParallelWithTupleExpression, \
      ParallelWithScalarExpression, \
@@ -50,7 +51,7 @@ def p_opt_configuration(p):
     '''opt_configuration : CONFIGURATION identifier_comma_list
                          | '''
     if len(p) > 1:
-        p[0] = p[2]
+        p[0] = IdentifierCollection(p.parser.filename, p.lineno(2), p[2])
 
 def p_opt_declarations(p):
     '''opt_declarations : DECLARE declarations
@@ -201,9 +202,9 @@ def p_scalar_or_tuple_identifier_comma_list(p):
     '''scalar_or_tuple_identifier_comma_list : '(' identifier_comma_list ')'
                                              | identifier_comma_list'''
     if len(p) > 2:
-        p[0] = tuple(p[2])
+        p[0] = IdentifierCollection(p.parser.filename, p.lineno(2), tuple(p[2]))
     else:
-        p[0] = p[1]
+        p[0] = IdentifierCollection(p.parser.filename, p.lineno(1), p[1])
 
 def p_identifier_comma_list(p):
     '''identifier_comma_list : identifier_or_qual_identifier ',' identifier_comma_list

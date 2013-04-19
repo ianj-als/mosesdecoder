@@ -15,9 +15,13 @@ class Component(Entity):
         self.inputs = inputs
         self.outputs = outputs
         self.configuration = configuration
-        self.delcarations = declarations
+        self.declarations = declarations
         self.definition = definition
 
+    def accept(self, visitor):
+        visitor.visit(self)
+        self.definition.accept(visitor)
+
     def __str__(self):
-        return "<Component:\n\tname = [%s],\n\tinputs = %s,\n\toutputs = %s,\n\tconfiguration = %s,\n\tdefinition = %s>" % \
-               (self.name, self.inputs, self.outputs, self.configuration, self.definition)
+        return "<Component:\n\tname = [%s],\n\tinputs = %s,\n\toutputs = %s,\n\tconfiguration = %s,\n\tdeclarations = %s\n\tdefinition = %s>" % \
+               (self.name, self.inputs, self.outputs, self.configuration, self.declarations, self.definition)
