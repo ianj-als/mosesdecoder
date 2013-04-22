@@ -4,14 +4,14 @@ class Component(Entity):
     def __init__(self,
                  filename,
                  lineno,
-                 name,
+                 identifier,
                  inputs,
                  outputs,
                  configuration,
                  declarations,
                  definition):
         Entity.__init__(self, filename, lineno)
-        self.name = name
+        self.identifier = identifier
         self.inputs = inputs
         self.outputs = outputs
         self.configuration = configuration
@@ -23,5 +23,8 @@ class Component(Entity):
         self.definition.accept(visitor)
 
     def __str__(self):
+        return str(self.identifier)
+
+    def __repr__(self):
         return "<Component:\n\tname = [%s],\n\tinputs = %s,\n\toutputs = %s,\n\tconfiguration = %s,\n\tdeclarations = %s\n\tdefinition = %s>" % \
-               (self.name, self.inputs, self.outputs, self.configuration, self.declarations, self.definition)
+               (self.identifier, self.inputs, self.outputs, self.configuration, self.declarations, self.definition)

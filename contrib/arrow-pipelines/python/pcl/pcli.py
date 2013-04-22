@@ -14,6 +14,8 @@ if __name__ == '__main__':
     python_import_path = os.getenv("PYTHONPATH", ".")
     resolver = ResolverVisitor(pcl_import_path, python_import_path)
     ast.accept(resolver)
+    for warning in resolver.get_warnings():
+        print warning
     errors = resolver.get_errors()
     if errors:
         for error in errors:

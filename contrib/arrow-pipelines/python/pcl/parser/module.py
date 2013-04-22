@@ -13,5 +13,10 @@ class Module(Entity):
         self.definition.accept(visitor)
 
     def __str__(self):
+        return self.filename
+
+    def __repr__(self):
         return "<Module:\n\timports = %s,\n\tdefinition = [%s],\n\tentity = [%s]>" % \
-               (self.imports, self.definition, super(Module, self).__str__())
+               (str(self.imports),
+                str(self.definition),
+                super(Module, self))

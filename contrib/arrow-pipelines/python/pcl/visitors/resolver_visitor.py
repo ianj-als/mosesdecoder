@@ -37,6 +37,7 @@ class ResolverVisitor(object):
         else:
             self.__python_import_paths = ["."]
         self.__errors = []
+        self.__warnings = []
 
     @staticmethod
     def __build_module_filename(identifier):
@@ -54,7 +55,7 @@ class ResolverVisitor(object):
         dups = dict()
         returns = list()
         for identifier in stuff:
-            if identifier in dups:
+            if identifier.identifier in dups:
                 returns.append(identifier)
             else:
                 dups[identifier] = True
@@ -62,16 +63,77 @@ class ResolverVisitor(object):
         return returns        
 
     @staticmethod
+    def __check_declarations(configuration, declarations, imports):
+        # The configuration identifier to count map
+        config = dict()
+        if configuration:
+            for c in configuration:
+                config[c] = 0
+
+        dups = dict()
+        missing_config = []
+        unknown_imports = []
+        duplicate_import_aliases = []
+
+        if declarations:
+            # Imported aliases
+            import_aliases = [import_.alias for import_ in imports] if imports else []
+            duplicate_import_aliases = ResolverVisitor.__check_duplicate_names(import_aliases)
+
+            for decl in declarations:
+                # Count occurrences of declaration identifiers
+                try:
+                    dups[decl] += 1
+                except KeyError:
+                    dups[decl] = 1
+
+                # Ensure we have imported an alias that is being used
+                # in this declaration
+                if decl.component_alias not in import_aliases:
+                    unknown_imports.append(decl.component_alias)
+
+                # Ensure the 'from' end of a declaration mapping
+                # exits in the configuration
+                if decl.configuration_mappings:
+                    for config_map in decl.configuration_mappings:
+                        if isinstance(config_map.from_, Identifier):
+                            if config_map.from_ in config:
+                                config[config_map.from_] += 1
+                            else:
+                                missing_config.append(config_map.from_)
+
+        unused_config = filter(lambda ce: config[ce] == 0, config)
+        duplicate_declarations = filter(lambda de: dups[de] > 1, dups)
+
+        return (tuple(missing_config),
+                tuple(unused_config),
+                tuple(unknown_imports),
+                tuple(duplicate_declarations),
+                tuple(duplicate_import_aliases))
+
+    @staticmethod
     def __check_duplicate_declarations(declarations):
         pass
 
-    def __add_duplication_id_errors(self, msg_fmt, collection, **kwargs):
-        for identifier in collection:
-            kwargs['identifier'] = identifier
-            self.__errors.append(msg_fmt % kwargs)
+    @staticmethod
+    def __add_messages(msg_fmt, collection, msg_collection):
+        for entity in collection:
+            info = {'entity' : entity,
+                    'filename' : entity.filename,
+                    'lineno' : entity.lineno}
+            msg_collection.append(msg_fmt % info)
+
+    def __add_errors(self, msg_fmt, collection):
+        ResolverVisitor.__add_messages(msg_fmt, collection, self.__errors)
+
+    def __add_warnings(self, msg_fmt, collection):
+        ResolverVisitor.__add_messages(msg_fmt, collection, self.__warnings)
 
     def get_errors(self):
         return tuple(self.__errors)
+
+    def get_warnings(self):
+        return tuple(self.__warnings)
 
     @multimethod(Module)
     def visit(self, module):
@@ -96,9 +158,13 @@ class ResolverVisitor(object):
                 pcl_resolver = ResolverVisitor(os.getenv("PCL_IMPORT_PATH", "."),
                                                os.getenv("PYTHONPATH", "."))
                 an_import.pcl_ast.accept(pcl_resolver)
+                pcl_warnings = pcl_resolver.get_warnings()
+                for pcl_warning in pcl_warnings:
+                    self.__warnings.append(pcl_warning)
                 pcl_errors = pcl_resolver.get_errors()
                 if pcl_errors:
-                    self.__errors.append("ERROR: %s at line %d, imported PCL module %s, with name %s, is invalid" % \
+                    self.__errors.append("ERROR: %s at line %d, imported PCL module %s, " \
+                                         "with name %s, is invalid" % \
                                          (an_import.filename,
                                           an_import.lineno,
                                           pcl_files[0],
@@ -106,7 +172,8 @@ class ResolverVisitor(object):
                     for pcl_error in pcl_errors:
                         self.__errors.append(pcl_error)
             else:
-                self.__errors.append("ERROR: %s at line %d, imported PCL module %s, with name %s, failed to parse" % \
+                self.__errors.append("ERROR: %s at line %d, imported PCL module %s, with name %s, " \
+                                     "failed to parse" % \
                                      (an_import.filename,
                                       an_import.lineno,
                                       pcl_files[0],
@@ -132,36 +199,56 @@ class ResolverVisitor(object):
         print "Component [%s]" % (component)
 
         # Check for duplicates
-        duplicate_inputs = ResolverVisitor.__check_duplicate_names(component.inputs.collection)
-        duplicate_outputs = ResolverVisitor.__check_duplicate_names(component.outputs.collection)
-        duplicate_config = ResolverVisitor.__check_duplicate_names(component.configuration.collection)
-        duplicate_decl_identifiers = ResolverVisitor.__check_duplicate_names([decl.identifier
-                                                                              for decl in component.declarations])
+        duplicate_inputs = ResolverVisitor.__check_duplicate_names(component.inputs)
+        duplicate_outputs = ResolverVisitor.__check_duplicate_names(component.outputs)
+        duplicate_config = ResolverVisitor.__check_duplicate_names(component.configuration)
+        duplicate_decl_identifiers = ResolverVisitor.__check_duplicate_names(component.declarations)
 
-        # Check for duplicate declared identifiers
-        duplicate_declarations = ResolverVisitor.__check_duplicate_declarations(component.declarations)
+        # Check that all the used configuration in declarations exist, and is used
+        missing_configuration, \
+        unused_configuration, \
+        unknown_imports, \
+        duplicate_declarations, \
+        duplicate_import_aliases = ResolverVisitor.__check_declarations(component.configuration,
+                                                                        component.declarations,
+                                                                        component.module.imports)
 
         if duplicate_inputs or \
            duplicate_outputs or \
            duplicate_config or \
            duplicate_decl_identifiers or \
-           duplicate_declarations:
-            self.__add_duplication_id_errors(self,
-                                             "ERROR: %{filename}s at line %{lineno} input declaration contains duplicate identifier %{identifier}s",
-                                             filename = component.inputs.filename,
-                                             lineno = component.inputs.lineno)
-            self.__add_duplication_id_errors(self,
-                                             "ERROR: %{filename}s at line %{lineno} output declaration contains duplicate identifier %{identifier}s",
-                                             filename = component.outputs.filename,
-                                             lineno = component.outputs.lineno)
-            self.__add_duplication_id_errors(self,
-                                             "ERROR: %{filename}s at line %{lineno} configuration declaration contains duplicate identifier %{identifier}s",
-                                             filename = component.configuration.filename,
-                                             lineno = component.configuration.lineno)
-            self.__add_duplication_id_errors(self,
-                                             "ERROR: %{filename}s at line %{lineno} component declaration contains duplicate identifier %{identifier}s",
-                                             filename = component.declarations.filename,
-                                             lineno = component.declarations.lineno)
+           missing_configuration or \
+           unused_configuration or \
+           unknown_imports or \
+           duplicate_declarations or \
+           duplicate_import_aliases:
+            self.__add_errors("ERROR: %(filename)s at line %(lineno)d input " \
+                              "declaration contains duplicate identifier %(entity)s",
+                              duplicate_inputs)
+            self.__add_errors("ERROR: %(filename)s at line %(lineno)d output " \
+                              "declaration contains duplicate identifier %(entity)s",
+                              duplicate_outputs)
+            self.__add_errors("ERROR: %(filename)s at line %(lineno)d configuration " \
+                              "declaration contains duplicate identifier %(entity)s",
+                              duplicate_config)
+            self.__add_errors("ERROR: %(filename)s at line %(lineno)d component " \
+                              "declaration contains duplicate identifier %(entity)s",
+                              duplicate_decl_identifiers)
+            self.__add_errors("ERROR: %(filename)s at line %(lineno)d component " \
+                              "configuration does not exist %(entity)s",
+                              missing_configuration)
+            self.__add_warnings("WARNING: %(filename)s at line %(lineno)d component " \
+                                "configuration is not used %(entity)s",
+                                unused_configuration)
+            self.__add_errors("ERROR: %(filename)s at line %(lineno)d import not found " \
+                              "in declaration %(entity)s",
+                              unknown_imports)
+            self.__add_errors("ERROR: %(filename)s at line %(lineno)d duplicate declaration " \
+                              "found %(entity)s",
+                              duplicate_declarations)
+            self.__add_errors("ERROR: %(filename)s at line %(lineno)d duplicate import alias " \
+                              "found %(entity)s",
+                              duplicate_import_aliases)
 
     @multimethod(CompositionExpression)
     def visit(self, comp_expr):

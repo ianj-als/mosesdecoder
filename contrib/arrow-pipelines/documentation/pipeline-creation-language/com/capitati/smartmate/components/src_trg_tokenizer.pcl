@@ -1,7 +1,7 @@
 #
 # Import all of the components to be composed
 #
-import com.capitati.smartmate.components.tokenizer as tokenizer
+import com.capitati.smartmate.components.tokenizer as tokeniser
 
 #
 # Component definition
@@ -27,11 +27,11 @@ component src_trg_tokeniser
     src_tokeniser := new tokeniser with
       tokeniser.src.language -> language,
       tokeniser.src.tokenisation_dir -> tokenisation_dir,
-      tokeniser.moses_installation_dir -> moses_installation_dir
+      tokeniser.moses.installation -> moses_installation_dir
     trg_tokeniser := new tokeniser with
       tokeniser.trg.language -> language,
       tokeniser.trg.tokenisation_dir -> tokenisation_dir,
-      tokeniser.moses.installaton -> moses_installation_dir
+      tokeniser.moses.installation -> moses_installation_dir
   as
     wire (src_filename -> filename,
           trg_filename -> filename) >>>

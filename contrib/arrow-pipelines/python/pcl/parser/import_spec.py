@@ -7,5 +7,8 @@ class Import(Entity):
         self.alias = alias
 
     def __str__(self):
+        return self.module_name
+
+    def __repr__(self):
         return "<ImportSpec: module = [%s], alias = [%s], entity = %s>" % \
-               (self.module_name, self.alias, super(Import, self).__str__())
+               (self.module_name, self.alias, super(Import, self))

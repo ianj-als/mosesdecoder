@@ -9,7 +9,6 @@ from component import Component
 from declaration import Declaration
 from expressions import Literal, \
      Identifier, \
-     IdentifierCollection, \
      CompositionExpression, \
      ParallelWithTupleExpression, \
      ParallelWithScalarExpression, \
@@ -30,6 +29,7 @@ from module import Module
 def p_module(p):
     '''module : imports_list component_definition'''
     p[0] = Module(p.parser.filename, p.lineno(1), p[1], p[2])
+    p[2].module = p[0]
 
 def p_imports_list(p):
     '''imports_list : import_spec imports_list
@@ -41,17 +41,27 @@ def p_imports_list(p):
 
 def p_import_spec(p):
     '''import_spec : IMPORT identifier_or_qual_identifier AS IDENTIFIER'''
-    p[0] = Import(p.parser.filename, p.lineno(1), p[2], p[4])
+    p[0] = Import(p.parser.filename,
+                  p.lineno(1),
+                  p[2],
+                  Identifier(p.parser.filename, p.lineno(4), p[4]))
 
 def p_component_definition(p):
     '''component_definition : COMPONENT IDENTIFIER INPUTS scalar_or_tuple_identifier_comma_list OUTPUTS scalar_or_tuple_identifier_comma_list opt_configuration opt_declarations AS component_body_expression'''
-    p[0] = Component(p.parser.filename, p.lineno(1), p[2], p[4], p[6], p[7], p[8], p[10])
+    p[0] = Component(p.parser.filename,
+                     p.lineno(1),
+                     Identifier(p.parser.filename, p.lineno(2), p[2]),
+                     p[4],
+                     p[6],
+                     p[7],
+                     p[8],
+                     p[10])
 
 def p_opt_configuration(p):
     '''opt_configuration : CONFIGURATION identifier_comma_list
                          | '''
     if len(p) > 1:
-        p[0] = IdentifierCollection(p.parser.filename, p.lineno(2), p[2])
+        p[0] = p[2]
 
 def p_opt_declarations(p):
     '''opt_declarations : DECLARE declarations
@@ -69,7 +79,11 @@ def p_declarations(p):
 
 def p_declaration(p):
     '''declaration : IDENTIFIER ASSIGN NEW IDENTIFIER opt_with_clause'''
-    p[0] = Declaration(p.parser.filename, p.lineno(1), p[1], p[4], p[5])
+    p[0] = Declaration(p.parser.filename,
+                       p.lineno(1),
+                       Identifier(p.parser.filename, p.lineno(1), p[1]),
+                       Identifier(p.parser.filename, p.lineno(4), p[4]),
+                       p[5])
 
 def p_opt_with_clause(p):
     '''opt_with_clause : WITH configuration_mappings
@@ -130,10 +144,7 @@ def p_unary_expression(p):
                         | identifier_expression
                         | literal_expression
                         | '(' expression ')' '''
-    if len(p) > 2:
-        p[0] = p[2]
-    else:
-        p[0] = p[1]
+    p[0] = p[2] if len(p) > 2 else p[1]
 
 def p_first_expression(p):
     '''first_expression : FIRST expression'''
@@ -202,9 +213,9 @@ def p_scalar_or_tuple_identifier_comma_list(p):
     '''scalar_or_tuple_identifier_comma_list : '(' identifier_comma_list ')'
                                              | identifier_comma_list'''
     if len(p) > 2:
-        p[0] = IdentifierCollection(p.parser.filename, p.lineno(2), tuple(p[2]))
+        p[0] = tuple(p[2])
     else:
-        p[0] = IdentifierCollection(p.parser.filename, p.lineno(1), p[1])
+        p[0] = p[1]
 
 def p_identifier_comma_list(p):
     '''identifier_comma_list : identifier_or_qual_identifier ',' identifier_comma_list

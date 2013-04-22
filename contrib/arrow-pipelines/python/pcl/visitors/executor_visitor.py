@@ -33,7 +33,7 @@ class ExecutorVisitor(object):
 
     @multimethod(Component)
     def visit(self, component):
-        print "Executing Component [%s]" % (component.name)
+        print "Executing Component [%s]" % (component.identifier)
 
     @multimethod(CompositionExpression)
     def visit(self, comp_expr):

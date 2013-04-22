@@ -6,8 +6,19 @@ class Literal(Entity):
          self.value = value
 
     def __str__(self):
+        return str(self.value)
+
+    def __repr__(self):
         return "<Literal: value = [%s], entity = %s>" % \
-               (self.value, super(Literal, self).__str__())
+               (self.value, super(Literal, self))
+
+    def __hash__(self):
+        return hash(self.value)
+
+    def __eq__(self, other):
+        if not isinstance(other, Literal):
+            return False
+        return self.value == other.value
 
 class Identifier(Entity):
     def __init__(self, filename, lineno, identifier):
@@ -15,8 +26,19 @@ class Identifier(Entity):
         self.identifier = identifier
 
     def __str__(self):
-         return "<Identifier: identifier = [%s], entity = %s>" % \
-                (self.identifier, super(Identifier, self).__str__())
+        return str(self.identifier)
+
+    def __repr__(self):
+        return "<Identifier: identifier = [%s], entity = %s>" % \
+               (self.identifier, super(Identifier, self))
+
+    def __hash__(self):
+        return hash(self.identifier)
+
+    def __eq__(self, other):
+        if not isinstance(other, Identifier):
+            return False
+        return self.identifier == other.identifier
 
 class IdentifierCollection(Entity):
     def __init__(self, filename, lineno, identifier_collection):
@@ -24,8 +46,19 @@ class IdentifierCollection(Entity):
         self.collection = identifier_collection
 
     def __str__(self):
+        return str([str(e) for e in self.collection])
+
+    def __repr__(self):
         return "<IdentifierCollection: collection = %s, entity = %s>" % \
-               (self.collection, super(IdentifierCollection, self).__str__())
+               (self.collection, super(IdentifierCollection, self))
+
+    def __hash__(self):
+        return hash(self.collection)
+
+    def __eq__(self, other):
+        if not isinstance(other, IdentifierCollection):
+            return False
+        return self.colleciton == other.collection
 
 class Expression(Entity):
     def __init__(self, filename, lineno):

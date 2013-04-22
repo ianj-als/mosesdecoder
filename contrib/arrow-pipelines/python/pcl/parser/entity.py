@@ -7,5 +7,8 @@ class Entity(object):
         visitor.visit(self)
 
     def __str__(self):
+        return "%s at line %d" % (self.filename, self.lineno)
+
+    def __repr__(self):
         return "<Entity: filename = [%s], line no = [%d]>" % \
                (self.filename, self.lineno)
