@@ -4,6 +4,7 @@ from parser.component import Component
 from parser.declaration import Declaration
 from parser.expressions import Literal, \
      Identifier, \
+     UnaryExpression, \
      CompositionExpression, \
      ParallelWithTupleExpression, \
      ParallelWithScalarExpression, \
@@ -35,6 +36,10 @@ class ExecutorVisitor(object):
     def visit(self, component):
         print "Executing Component [%s]" % (component.identifier)
 
+    @multimethod(UnaryExpression)
+    def visit(self, unary_expr):
+        pass
+
     @multimethod(CompositionExpression)
     def visit(self, comp_expr):
         pass
@@ -65,6 +70,22 @@ class ExecutorVisitor(object):
 
     @multimethod(WireExpression)
     def visit(self, wire_expr):
+        pass
+
+    @multimethod(Mapping)
+    def visit(self, mapping):
+        pass
+
+    @multimethod(TopMapping)
+    def visit(self, mapping):
+        pass
+
+    @multimethod(BottomMapping)
+    def visit(self, mapping):
+        pass
+
+    @multimethod(LiteralMapping)
+    def visit(self, mapping):
         pass
 
     @multimethod(IdentifierExpression)

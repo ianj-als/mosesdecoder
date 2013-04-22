@@ -9,6 +9,7 @@ from component import Component
 from declaration import Declaration
 from expressions import Literal, \
      Identifier, \
+     UnaryExpression, \
      CompositionExpression, \
      ParallelWithTupleExpression, \
      ParallelWithScalarExpression, \
@@ -29,6 +30,9 @@ from module import Module
 def p_module(p):
     '''module : imports_list component_definition'''
     p[0] = Module(p.parser.filename, p.lineno(1), p[1], p[2])
+    # Store the parent module in the imports and definition objects
+    for import_ in p[1]:
+        import_.module = p[0]
     p[2].module = p[0]
 
 def p_imports_list(p):
@@ -144,7 +148,8 @@ def p_unary_expression(p):
                         | identifier_expression
                         | literal_expression
                         | '(' expression ')' '''
-    p[0] = p[2] if len(p) > 2 else p[1]
+    p[0] = UnaryExpression(p.parser.filename, p.lineno(2), p[2]) if len(p) > 2 \
+           else UnaryExpression(p.parser.filename, p.lineno(1), p[1])
 
 def p_first_expression(p):
     '''first_expression : FIRST expression'''

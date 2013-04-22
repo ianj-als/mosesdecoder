@@ -64,16 +64,28 @@ class Expression(Entity):
     def __init__(self, filename, lineno):
         Entity.__init__(self, filename, lineno)
 
+    def accept(self, visitor):
+        visitor.visit(self)
+
 class UnaryExpression(Expression):
      def __init__(self, filename, lineno, expression):
         Entity.__init__(self, filename, lineno)
         self.expression = expression
+
+     def accept(self, visitor):
+         visitor.visit(self)
+         self.expression.accept(visitor)
 
 class BinaryExpression(Expression):
     def __init__(self, filename, lineno, left_expr, right_expr):
         Entity.__init__(self, filename, lineno)
         self.left = left_expr
         self.right = right_expr
+
+    def accept(self, visitor):
+        visitor.visit(self)
+        self.left.accept(visitor)
+        self.right.accept(visitor)
 
 class CompositionExpression(BinaryExpression):
     def __init__(self, filename, lineno, left_expr, right_expr):
@@ -104,18 +116,33 @@ class MergeExpression(Expression):
         Expression.__init__(self, filename, lineno)
         self.mapping = merge_mapping
 
+    def accept(self, visitor):
+        visitor.visit(self)
+        for merge_map in self.mapping:
+            merge_map.accept(visitor)
+
 class WireExpression(Expression):
     def __init__(self, filename, lineno, wire_mapping):
         Expression.__init__(self, filename, lineno)
         self.mapping = wire_mapping
+
+    def accept(self, visitor):
+        visitor.visit(self)
+        for map_ in self.mapping:
+            map_.accept(visitor)
 
 class IdentifierExpression(Expression):
     def __init__(self, filename, lineno, identifier):
         Expression.__init__(self, filename, lineno)
         self.identifier = identifier
 
+    def accept(self, visitor):
+        visitor.visit(self)
+
 class LiteralExpression(Expression):
     def __init__(self, filename, lineno, literal):
         Expression.__init__(self, filename, lineno)
         self.literal = literal
 
+    def accept(self, visitor):
+        visitor.visit(self)
