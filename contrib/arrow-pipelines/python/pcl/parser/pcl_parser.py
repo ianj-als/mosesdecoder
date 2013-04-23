@@ -105,7 +105,7 @@ def p_configuration_mappings(p):
 
 def p_mapping(p):
     '''mapping : identifier_or_literal MAPS_TO identifier_or_qual_identifier'''
-    p[0] = Mapping(p.parser.filename, p.lineno(1), p[1], p[3])
+    p[0] = Mapping(p.parser.filename, p[1].lineno, p[1], p[3])
 
 def p_component_body(p):
     '''component_body_expression : expression'''

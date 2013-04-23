@@ -10,7 +10,8 @@ class Literal(Entity):
 
     def __repr__(self):
         return "<Literal: value = [%s], entity = %s>" % \
-               (self.value, super(Literal, self))
+               (self.value.__repr__(),
+                super(Literal, self).__repr__())
 
     def __hash__(self):
         return hash(self.value)
@@ -29,8 +30,9 @@ class Identifier(Entity):
         return str(self.identifier)
 
     def __repr__(self):
-        return "<Identifier: identifier = [%s], entity = %s>" % \
-               (self.identifier, super(Identifier, self))
+        return "<Identifier: identifier = %s, entity = %s>" % \
+               (self.identifier.__repr__(),
+                super(Identifier, self).__repr__())
 
     def __hash__(self):
         return hash(self.identifier)
@@ -39,26 +41,6 @@ class Identifier(Entity):
         if not isinstance(other, Identifier):
             return False
         return self.identifier == other.identifier
-
-class IdentifierCollection(Entity):
-    def __init__(self, filename, lineno, identifier_collection):
-        Entity.__init__(self, filename, lineno)
-        self.collection = identifier_collection
-
-    def __str__(self):
-        return str([str(e) for e in self.collection])
-
-    def __repr__(self):
-        return "<IdentifierCollection: collection = %s, entity = %s>" % \
-               (self.collection, super(IdentifierCollection, self))
-
-    def __hash__(self):
-        return hash(self.collection)
-
-    def __eq__(self, other):
-        if not isinstance(other, IdentifierCollection):
-            return False
-        return self.colleciton == other.collection
 
 class Expression(Entity):
     def __init__(self, filename, lineno):

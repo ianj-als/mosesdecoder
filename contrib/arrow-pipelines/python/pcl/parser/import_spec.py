@@ -11,4 +11,6 @@ class Import(Entity):
 
     def __repr__(self):
         return "<ImportSpec: module = [%s], alias = [%s], entity = %s>" % \
-               (self.module_name, self.alias, super(Import, self))
+               (self.module_name.__repr__(),
+                self.alias.__repr__(),
+                super(Import, self).__repr__())

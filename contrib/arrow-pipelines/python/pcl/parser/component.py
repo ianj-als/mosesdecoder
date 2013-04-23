@@ -20,11 +20,18 @@ class Component(Entity):
 
     def accept(self, visitor):
         visitor.visit(self)
+        for decl in self.declarations:
+            decl.accept(visitor)
         self.definition.accept(visitor)
 
     def __str__(self):
         return str(self.identifier)
 
     def __repr__(self):
-        return "<Component:\n\tname = [%s],\n\tinputs = %s,\n\toutputs = %s,\n\tconfiguration = %s,\n\tdeclarations = %s\n\tdefinition = %s>" % \
-               (self.identifier, self.inputs, self.outputs, self.configuration, self.declarations, self.definition)
+        return "<Component:\n\tname = %s,\n\tinputs = %s,\n\toutputs = %s," \
+               "\n\tconfiguration = %s,\n\tdeclarations = %s\n\tdefinition = %s" \
+               "\n\tentity = %s>" % \
+               (self.identifier.__repr__(), self.inputs.__repr__(),
+                self.outputs.__repr__(), self.configuration.__repr__(),
+                self.declarations.__repr__(), self.definition.__repr__(),
+                super(Component, self).__repr__())

@@ -51,17 +51,17 @@ class ResolverVisitor(object):
 
         return module_filename + ".[Pp][Cc][Ll]", module_filename + ".[Pp][Yy]"
 
-    @staticmethod
-    def __check_duplicate_names(stuff):
-        dups = dict()
+    def __add_identifiers_to_symbol_table(self, identifiers, symbol_group_key):
+        """Check for duplicate identifiers in a collection and add them
+           to the module's symbol table. Return a tuple of duplicated
+           identifiers."""
+        symbol_dict = self.__module.resolution_symbols[symbol_group_key]
         returns = list()
-        for identifier in stuff:
-            if identifier.identifier in dups:
+        for identifier in identifiers:
+            if identifier in symbol_dict:
                 returns.append(identifier)
-            else:
-                dups[identifier] = True
-
-        return returns        
+            symbol_dict[identifier] = identifier
+        return tuple(returns)
 
     @staticmethod
     def __check_declarations(configuration, declarations, imports):
@@ -100,7 +100,8 @@ class ResolverVisitor(object):
                             import_module_config_fn = getattr(import_module_spec['module'],
                                                               'get_configuration')
                             # The Python module's component inputs
-                            import_module_config = import_module_config_fn()
+                            import_module_config = [Identifier(import_module_spec['module'].__name__, 0, c) \
+                                                    for c in import_module_config_fn()]
                         except AttributeError:
                             python_module_interface.append({'module_name' : import_module_name,
                                                             'missing_function' : 'get_configuration'})
@@ -149,16 +150,26 @@ class ResolverVisitor(object):
     def __add_warnings(self, msg_fmt, collection, unpack_fn):
         ResolverVisitor.__add_messages(msg_fmt, collection, unpack_fn, self.__warnings)
 
+    def has_errors(self):
+        return len(self.__errors) > 0
+
     def get_errors(self):
         return tuple(self.__errors)
+
+    def has_warnings(self):
+        return len(self.__warnings) > 0
 
     def get_warnings(self):
         return tuple(self.__warnings)
 
     @multimethod(Module)
     def visit(self, module):
-        module.resolution_symbols = {'imports' : dict(),
-                                     'components' : dict()}
+        self.__module = module
+        self.__module.resolution_symbols = {'imports' : dict(),
+                                            'components' : dict(),
+                                            'inputs' : dict(),
+                                            'outputs' : dict(),
+                                            'configuration' : dict()}
 
     @multimethod(Import)
     def visit(self, an_import):
@@ -169,8 +180,6 @@ class ResolverVisitor(object):
         python_files = reduce(lambda x, y: x + y,
                               [glob.glob(os.path.join(directory, py_filename))
                                for directory in self.__python_import_paths])
-
-        print "PCL names = %s\nPython names = %s\n" % (pcl_files, python_files)
 
         if pcl_files and not python_files:
             # Module is a PCL file
@@ -244,11 +253,12 @@ class ResolverVisitor(object):
     def visit(self, component):
         print "Component [%s]" % (component)
 
-        # Check for duplicates
-        duplicate_inputs = ResolverVisitor.__check_duplicate_names(component.inputs)
-        duplicate_outputs = ResolverVisitor.__check_duplicate_names(component.outputs)
-        duplicate_config = ResolverVisitor.__check_duplicate_names(component.configuration)
-        duplicate_decl_identifiers = ResolverVisitor.__check_duplicate_names(component.declarations)
+        # Add the inputs, outputs, configuration and declaration identifiers to
+        # the module's symbol table
+        duplicate_inputs = self.__add_identifiers_to_symbol_table(component.inputs, 'inputs')
+        duplicate_outputs = self.__add_identifiers_to_symbol_table(component.outputs, 'outputs')
+        duplicate_config = self.__add_identifiers_to_symbol_table(component.configuration, 'configuration')
+        duplicate_decl_identifiers = self.__add_identifiers_to_symbol_table(component.declarations, 'components')
 
         # Check that all the used configuration in declarations exist, and is used
         missing_configuration, \
@@ -326,6 +336,10 @@ class ResolverVisitor(object):
             self.__add_errors("ERROR: Python module %(module_name)s does not define mandatory function %(missing_function)s",
                               python_module_interace,
                               lambda e: e)
+
+    @multimethod(Declaration)
+    def visit(self, decl):
+        pass
 
     @multimethod(UnaryExpression)
     def visit(self, unary_expr):

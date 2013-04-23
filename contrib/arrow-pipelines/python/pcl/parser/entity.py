@@ -10,5 +10,6 @@ class Entity(object):
         return "%s at line %d" % (self.filename, self.lineno)
 
     def __repr__(self):
-        return "<Entity: filename = [%s], line no = [%d]>" % \
-               (self.filename, self.lineno)
+        return "<Entity: filename = %s, line no = %d>" % \
+               (self.filename.__repr__(),
+                self.lineno)

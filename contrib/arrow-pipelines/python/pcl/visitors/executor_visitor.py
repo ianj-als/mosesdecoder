@@ -36,6 +36,10 @@ class ExecutorVisitor(object):
     def visit(self, component):
         print "Executing Component [%s]" % (component.identifier)
 
+    @multimethod(Declaration)
+    def visit(self, decl):
+        pass
+
     @multimethod(UnaryExpression)
     def visit(self, unary_expr):
         pass

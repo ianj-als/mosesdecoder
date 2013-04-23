@@ -16,7 +16,7 @@ class Module(Entity):
         return self.filename
 
     def __repr__(self):
-        return "<Module:\n\timports = %s,\n\tdefinition = [%s],\n\tentity = [%s]>" % \
-               (str(self.imports),
-                str(self.definition),
-                super(Module, self))
+        return "<Module:\n\timports = %s,\n\tdefinition = %s,\n\tentity = %s>" % \
+               (self.imports.__repr__(),
+                self.definition.__repr__(),
+                super(Module, self).__repr__())
