@@ -43,39 +43,67 @@ class Identifier(Entity):
         return self.identifier == other.identifier
 
 class Expression(Entity):
-    def __init__(self, filename, lineno):
+    def __init__(self, filename, lineno, parent_expr = None):
         Entity.__init__(self, filename, lineno)
+        self.parent = parent_expr
+        self.resolution_symbols = dict()
 
     def accept(self, visitor):
         visitor.visit(self)
+
+    def __repr__(self):
+        return "<Expression: resolve syms = %s, entity = %s>" % \
+               (self.resolution_symbols, super(Expression, self).__repr__())
 
 class UnaryExpression(Expression):
      def __init__(self, filename, lineno, expression):
-        Entity.__init__(self, filename, lineno)
+        Expression.__init__(self, filename, lineno)
         self.expression = expression
+        self.expression.parent = self
 
      def accept(self, visitor):
-         visitor.visit(self)
          self.expression.accept(visitor)
+         visitor.visit(self)
+
+     def __repr__(self):
+        return "<UnaryExpression: unary = %s, expression = %s>" % \
+               (self.expression.__repr__(),
+                super(UnaryExpression, self).__repr__())
 
 class BinaryExpression(Expression):
     def __init__(self, filename, lineno, left_expr, right_expr):
-        Entity.__init__(self, filename, lineno)
+        Expression.__init__(self, filename, lineno)
         self.left = left_expr
+        self.left.parent = self
         self.right = right_expr
+        self.right.parent = self
 
     def accept(self, visitor):
-        visitor.visit(self)
         self.left.accept(visitor)
         self.right.accept(visitor)
+        visitor.visit(self)
+
+    def __repr__(self):
+        return "<BinaryExpression: left = %s, right = %s, expression = %s>" % \
+               (self.left.__repr__(),
+                self.right.__repr__(),
+                super(BinaryExpression, self).__repr__())
 
 class CompositionExpression(BinaryExpression):
     def __init__(self, filename, lineno, left_expr, right_expr):
         BinaryExpression.__init__(self, filename, lineno, left_expr, right_expr)
 
+    def __repr__(self):
+        return "<CompositionExpression: binary expr = %s>" % \
+               (super(CompositionExpression, self).__repr__())
+
 class ParallelWithTupleExpression(BinaryExpression):
      def __init__(self, filename, lineno, left_expr, right_expr):
         BinaryExpression.__init__(self, filename, lineno, left_expr, right_expr)
+
+     def __repr__(self):
+        return "<ParallelWithTupleExpression: binary expr = %s>" % \
+               (super(ParallelWithTupleExpression, self).__repr__())
 
 class ParallelWithScalarExpression(BinaryExpression):
      def __init__(self, filename, lineno, left_expr, right_expr):
@@ -97,21 +125,29 @@ class MergeExpression(Expression):
     def __init__(self, filename, lineno, merge_mapping):
         Expression.__init__(self, filename, lineno)
         self.mapping = merge_mapping
+        self.mapping.parent = self
 
     def accept(self, visitor):
-        visitor.visit(self)
         for merge_map in self.mapping:
             merge_map.accept(visitor)
+        visitor.visit(self)
 
 class WireExpression(Expression):
     def __init__(self, filename, lineno, wire_mapping):
         Expression.__init__(self, filename, lineno)
         self.mapping = wire_mapping
+        for m in self.mapping:
+            m.parent = self
 
     def accept(self, visitor):
-        visitor.visit(self)
         for map_ in self.mapping:
             map_.accept(visitor)
+        visitor.visit(self)
+
+    def __repr__(self):
+        return "<WireExpression: mapping = %s, expression = %s>" % \
+               (self.mapping.__repr__(),
+                super(WireExpression, self).__repr__())
 
 class IdentifierExpression(Expression):
     def __init__(self, filename, lineno, identifier):
@@ -121,6 +157,14 @@ class IdentifierExpression(Expression):
     def accept(self, visitor):
         visitor.visit(self)
 
+    def __str__(self):
+        return str(self.identifier)
+
+    def __repr__(self):
+        return "<IdentifierExpression: identifier = %s, expression = %s>" % \
+               (self.identifier.__repr__(),
+                super(IdentifierExpression, self).__repr__())
+
 class LiteralExpression(Expression):
     def __init__(self, filename, lineno, literal):
         Expression.__init__(self, filename, lineno)
@@ -128,3 +172,11 @@ class LiteralExpression(Expression):
 
     def accept(self, visitor):
         visitor.visit(self)
+
+    def __str__(self):
+        return str(self.literal)
+
+    def __repr__(self):
+        return "<LiteralExpression: literal = %s, expression = %s>" % \
+               (self.literal.__repr__(),
+                super(LiteralExpression, self).__repr__())

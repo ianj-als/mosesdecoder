@@ -35,7 +35,7 @@ component src_trg_tokeniser
   as
     wire (src_filename -> filename,
           trg_filename -> filename) >>>
-    src_tokeniser *** trg_tokeniser >>>
+    (src_tokeniser *** trg_tokeniser) >>>
     wire (tokenised_filename -> tokenised_src_filename,
           tokenised_filename -> tokenised_trg_filename)
 

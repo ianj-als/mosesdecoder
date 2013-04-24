@@ -51,16 +51,16 @@ class ResolverVisitor(object):
 
         return module_filename + ".[Pp][Cc][Ll]", module_filename + ".[Pp][Yy]"
 
-    def __add_identifiers_to_symbol_table(self, identifiers, symbol_group_key):
+    def __add_identifiers_to_symbol_table(self, things, symbol_group_key):
         """Check for duplicate identifiers in a collection and add them
            to the module's symbol table. Return a tuple of duplicated
            identifiers."""
         symbol_dict = self.__module.resolution_symbols[symbol_group_key]
         returns = list()
-        for identifier in identifiers:
-            if identifier in symbol_dict:
-                returns.append(identifier)
-            symbol_dict[identifier] = identifier
+        for thing in things:
+            if thing in symbol_dict:
+                returns.append(thing)
+            symbol_dict[thing] = thing
         return tuple(returns)
 
     @staticmethod
@@ -97,11 +97,9 @@ class ResolverVisitor(object):
                         # get_inputs() function
                         import_module_name = import_module_spec['module'].__name__
                         try:
-                            import_module_config_fn = getattr(import_module_spec['module'],
-                                                              'get_configuration')
                             # The Python module's component inputs
                             import_module_config = [Identifier(import_module_spec['module'].__name__, 0, c) \
-                                                    for c in import_module_config_fn()]
+                                                    for c in import_module_spec['get_configuration_fn']()]
                         except AttributeError:
                             python_module_interface.append({'module_name' : import_module_name,
                                                             'missing_function' : 'get_configuration'})
@@ -233,9 +231,60 @@ class ResolverVisitor(object):
             else:
                 print "Importing python %s" % an_import.module_name
                 # Import the Python module
-                import_symbol_dict[an_import.alias] = {'type' : 'python',
-                                                       'module' : __import__(str(an_import.module_name),
-                                                                             fromlist = ['get_configuration'])}
+                imported_module = __import__(str(an_import.module_name),
+                                             fromlist = ['get_inputs',
+                                                         'get_outputs',
+                                                         'get_configuration',
+                                                         'configure',
+                                                         'initialise'])
+                try:
+                    get_inputs_fn = getattr(imported_module, 'get_inputs')
+                except AttributeError:
+                    get_inputs_fn = lambda _: []
+                    self.__errors.append("ERROR: %s at line %d imported Python module %s " \
+                                         "does not define get_inputs function" % \
+                                         (an_import.filename, an_import.lineno,
+                                          an_import.module_name))
+                try:
+                    get_outputs_fn = getattr(imported_module, 'get_outputs')
+                except AttributeError:
+                    get_outputs_fn = lambda _: []
+                    self.__errors.append("ERROR: %s at line %d imported Python module %s " \
+                                         "does not define get_outputs function" % \
+                                         (an_import.filename, an_import.lineno,
+                                          an_import.module_name))
+                try:
+                    get_configuration_fn = getattr(imported_module, 'get_configuration')
+                except AttributeError:
+                    get_configuration_fn = lambda _: []
+                    self.__errors.append("ERROR: %s at line %d imported Python module %s " \
+                                         "does not define get_configuration function" % \
+                                         (an_import.filename, an_import.lineno,
+                                          an_import.module_name))
+                try:
+                    configure_fn = getattr(imported_module, 'configure')
+                except AttributeError:
+                    configure_fn = lambda _: None
+                    self.__errors.append("ERROR: %s at line %d imported Python module %s " \
+                                         "does not define configure function" % \
+                                         (an_import.filename, an_import.lineno,
+                                          an_import.module_name))
+                try:
+                    initialise_fn = getattr(imported_module, 'initialise')
+                except AttributeError:
+                    initialise_fn = lambda _: (lambda a, s: dict())
+                    self.__errors.append("ERROR: %s at line %d imported Python module %s " \
+                                         "does not define initialise function" % \
+                                         (an_import.filename, an_import.lineno,
+                                          an_import.module_name))
+                module_spec = {'type' : 'python',
+                               'module' : imported_module,
+                               'get_inputs_fn' : get_inputs_fn,
+                               'get_outputs_fn' : get_outputs_fn,
+                               'get_configuration_fn' : get_configuration_fn,
+                               'configure_fn' : configure_fn,
+                               'initialise_fn' : initialise_fn}
+                import_symbol_dict[an_import.alias] = module_spec
         elif pcl_files and python_files:
             self.__errors.append("ERROR: %s at line %d, ambiguous module import %s is both PCL and Python" % \
                                  (an_import.filename,
@@ -327,13 +376,15 @@ class ResolverVisitor(object):
                               lambda e: {'entity' : e,
                                          'filename' : e.filename,
                                          'lineno' : e.lineno})
-            self.__add_errors("ERROR: %(filename)s at line %(lineno)d configuration %(entity)s used which is not defined in module %(module_name)s",
+            self.__add_errors("ERROR: %(filename)s at line %(lineno)d configuration %(entity)s " \
+                              "used which is not defined in module %(module_name)s",
                               unknown_module_configuration,
                               lambda e: {'entity' : e['config_map'].to,
                                          'module_name' : e['module_name'],
                                          'filename' : e['config_map'].filename,
                                          'lineno' : e['config_map'].lineno})
-            self.__add_errors("ERROR: Python module %(module_name)s does not define mandatory function %(missing_function)s",
+            self.__add_errors("ERROR: Python module %(module_name)s does not define " \
+                              "mandatory function %(missing_function)s",
                               python_module_interace,
                               lambda e: e)
 
@@ -343,15 +394,72 @@ class ResolverVisitor(object):
 
     @multimethod(UnaryExpression)
     def visit(self, unary_expr):
-        pass
+        # Unary expressions have the same inputs and outputs as thier expression
+        unary_expr.resolution_symbols['inputs'] = unary_expr.expression.resolution_symbols['inputs']
+        unary_expr.resolution_symbols['outputs'] = unary_expr.expression.resolution_symbols['outputs']
+
+    def __check_root_expression(self, expr):
+        if expr.parent == None:
+            # Root expression, so get inputs and outpus
+            # from module defined inputs and outputs clauses
+            expected_inputs = self.__module.definition.inputs
+            expected_outputs = self.__module.definition.outputs
+
+            # The expression's inputs and outputs
+            inputs = expr.resolution_symbols['inputs']
+            outputs = expr.resolution_symbols['outputs']
+
+            if expected_inputs != inputs:
+                self.__errors.append("ERROR: %s at line %d component " \
+                                     "expects inputs %s, but got %s" % \
+                                     (expr.filename,
+                                      expr.lineno,
+                                      expected_inputs,
+                                      inputs))
+            if expected_outputs != outputs:
+                self.__errors.append("ERROR: %s at line %d component " \
+                                     "expects outputs %s, but got %s" % \
+                                     (expr.filename,
+                                      expr.lineno,
+                                      expected_outputs,
+                                      outputs))
 
     @multimethod(CompositionExpression)
     def visit(self, comp_expr):
-        pass
+        # The inputs and output of this component
+        inputs = comp_expr.left.resolution_symbols['inputs']
+        outputs = comp_expr.right.resolution_symbols['outputs']
+
+        # Check that the composing components are output/input
+        # compatible
+        left_outputs = comp_expr.left.resolution_symbols['outputs']
+        right_inputs = comp_expr.right.resolution_symbols['inputs']
+        print "\n\nLeft outs = %s\nRight ins = %s\n\n" % (left_outputs, right_inputs)
+        if left_outputs != right_inputs:
+            self.__errors.append("ERROR: %s at line %d attempted composition "\
+                                 "with incompatible components" % \
+                                 (comp_expr.filename,
+                                  comp_expr.lineno))
+
+        # The inputs and outputs for this composed component
+        comp_expr.resolution_symbols['inputs'] = inputs
+        comp_expr.resolution_symbols['outputs'] = outputs
+
+        self.__check_root_expression(comp_expr)
 
     @multimethod(ParallelWithTupleExpression)
     def visit(self, para_tuple_expr):
-        pass
+        # Inputs and outputs of the top and bottom components
+        top_inputs = para_tuple_expr.left.resolution_symbols['inputs']
+        top_outputs = para_tuple_expr.left.resolution_symbols['outputs']
+        bottom_inputs = para_tuple_expr.right.resolution_symbols['inputs']
+        bottom_outputs = para_tuple_expr.right.resolution_symbols['outputs']
+
+        # The inputs and outputs for this composed component
+        para_tuple_expr.resolution_symbols['inputs'] = (top_inputs, bottom_inputs)
+        para_tuple_expr.resolution_symbols['outputs'] = (top_outputs, bottom_outputs)
+
+        self.__check_root_expression(para_tuple_expr)
 
     @multimethod(ParallelWithScalarExpression)
     def visit(self, para_scalar_expr):
@@ -375,7 +483,14 @@ class ResolverVisitor(object):
 
     @multimethod(WireExpression)
     def visit(self, wire_expr):
-        pass
+        inputs = [m.from_ for m in wire_expr.mapping]
+        outputs = [m.to for m in wire_expr.mapping]
+        if isinstance(wire_expr.mapping, tuple):
+            inputs = tuple(inputs)
+            outputs = tuple(outputs)
+
+        wire_expr.resolution_symbols['inputs'] = inputs
+        wire_expr.resolution_symbols['outputs'] = outputs
 
     @multimethod(Mapping)
     def visit(self, mapping):
@@ -395,7 +510,29 @@ class ResolverVisitor(object):
 
     @multimethod(IdentifierExpression)
     def visit(self, iden_expr):
-        pass
+        # Imports and components symbol tables are needed
+        imports_sym_table = self.__module.resolution_symbols['imports']
+        comp_sym_table = self.__module.resolution_symbols['components']
+
+        # Lookup the declaration that made this identifier expression possilbe
+        try:
+            declaration = comp_sym_table[Declaration(None, 0, iden_expr.identifier, None, [])]
+        except KeyError:
+            self.__errors.append("ERROR: %s at line %d unknown component %s" % \
+                                 (iden_expr.filename,
+                                  iden_expr.lineno,
+                                  iden_expr))
+
+        module_alias = declaration.component_alias
+        module_spec = imports_sym_table[module_alias]
+
+        get_inputs_fn = module_spec['get_inputs_fn']
+        get_outputs_fn = module_spec['get_outputs_fn']
+
+        print "\n\nINPUTS = %s\nOUTPUTS = %s\n\n" % (get_inputs_fn(), get_outputs_fn())
+
+        iden_expr.resolution_symbols['inputs'] = [Identifier(None, 0, i) for i in get_inputs_fn()]
+        iden_expr.resolution_symbols['outputs'] = [Identifier(None, 0, i) for i in get_outputs_fn()]
 
     @multimethod(LiteralExpression)
     def visit(self, literal_expr):

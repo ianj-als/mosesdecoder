@@ -121,7 +121,7 @@ def p_composition_expression(p):
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = CompositionExpression(p.parser.filename, p.lineno(1), p[1], p[3])
+        p[0] = CompositionExpression(p.parser.filename, p[1].lineno, p[1], p[3])
 
 def p_parallel_with_tuple_expression(p):
     '''parallel_with_tuple_expression : parallel_with_scalar_expression
@@ -129,7 +129,8 @@ def p_parallel_with_tuple_expression(p):
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = ParallelWithTupleExpression(p.parser.filename, p.lineno(1), p[1], p[3])
+        p[0] = ParallelWithTupleExpression(p.parser.filename, p[1].lineno, p[1], p[3])
+        print p[0].__repr__()
 
 def p_parallel_with_scalar_expression(p):
     '''parallel_with_scalar_expression : unary_expression
@@ -137,7 +138,7 @@ def p_parallel_with_scalar_expression(p):
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = ParallelWithScalarExpression(p.parser.filename, p.lineno(1), p[1], p[3])
+        p[0] = ParallelWithScalarExpression(p.parser.filename, p[1].lineno, p[1], p[3])
 
 def p_unary_expression(p):
     '''unary_expression : first_expression
@@ -148,8 +149,10 @@ def p_unary_expression(p):
                         | identifier_expression
                         | literal_expression
                         | '(' expression ')' '''
-    p[0] = UnaryExpression(p.parser.filename, p.lineno(2), p[2]) if len(p) > 2 \
-           else UnaryExpression(p.parser.filename, p.lineno(1), p[1])
+    if len(p) > 2:
+        p[0] = UnaryExpression(p.parser.filename, p[2].lineno, p[2])
+    else:
+        p[0] = UnaryExpression(p.parser.filename, p[1].lineno, p[1])
 
 def p_first_expression(p):
     '''first_expression : FIRST expression'''
@@ -177,11 +180,11 @@ def p_wire_expression(p):
 
 def p_identifier_expression(p):
     '''identifier_expression : identifier_or_qual_identifier'''
-    p[0] = IdentifierExpression(p.parser.filename, p.lineno(1), p[1])
+    p[0] = IdentifierExpression(p.parser.filename, p[1].lineno, p[1])
 
 def p_literal_expression(p):
     '''literal_expression : literal'''
-    p[0] = LiteralExpression(p.parser.filename, p.lineno(1), p[1])
+    p[0] = LiteralExpression(p.parser.filename, p[1].lineno, p[1])
 
 def p_merge_mappings(p):
     '''merge_mappings : merge_mapping ',' merge_mappings
@@ -212,7 +215,7 @@ def p_wire_mappings(p):
 
 def p_wire_mapping(p):
     '''wire_mapping : identifier_or_qual_identifier MAPS_TO identifier_or_qual_identifier'''
-    p[0] = Mapping(p.parser.filename, p.lineno(1), p[1], p[3])
+    p[0] = Mapping(p.parser.filename, p[1].lineno, p[1], p[3])
 
 def p_scalar_or_tuple_identifier_comma_list(p):
     '''scalar_or_tuple_identifier_comma_list : '(' identifier_comma_list ')'

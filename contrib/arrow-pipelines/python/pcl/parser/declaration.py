@@ -11,7 +11,7 @@ class Declaration(Entity):
         visitor.visit(self)
 
     def __str__(self):
-        return self.identifier
+        return str(self.identifier)
 
     def __repr__(self):
         return "<Declaration: identifier = %s\n\tcomponent_alias = %s\n\t" \
@@ -19,3 +19,11 @@ class Declaration(Entity):
                (self.identifier.__repr__(), self.component_alias.__repr__(),
                 self.configuration_mappings.__repr__(),
                 super(Declaration, self).__repr__())
+
+    def __hash__(self):
+        return self.identifier.__hash__()
+
+    def __eq__(self, other):
+        if not isinstance(other, Declaration):
+            return False
+        return self.identifier == other.identifier
