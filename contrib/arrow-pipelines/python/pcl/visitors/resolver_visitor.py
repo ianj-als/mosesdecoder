@@ -64,18 +64,6 @@ class ResolverVisitor(object):
 
         return list()
 
-    def __add_identifiers_to_symbol_table(self, things, symbol_group_key):
-        """Check for duplicate identifiers in a collection and add them
-           to the module's symbol table. Return a tuple of duplicated
-           identifiers."""
-        symbol_dict = self.__module.resolution_symbols[symbol_group_key]
-        returns = list()
-        for thing in things:
-            if thing in symbol_dict:
-                returns.append(thing)
-            symbol_dict[thing] = thing
-        return tuple(returns)
-
     @staticmethod
     def __check_declarations(configuration, declarations, imports):
         # The configuration identifier to count map
@@ -148,6 +136,18 @@ class ResolverVisitor(object):
                 tuple(duplicate_declarations),
                 tuple(unknown_module_configuration),
                 tuple(python_module_interface))
+
+    def __add_identifiers_to_symbol_table(self, things, symbol_group_key):
+        """Check for duplicate identifiers in a collection and add them
+           to the module's symbol table. Return a tuple of duplicated
+           identifiers."""
+        symbol_dict = self.__module.resolution_symbols[symbol_group_key]
+        returns = list()
+        for thing in things:
+            if thing in symbol_dict:
+                returns.append(thing)
+            symbol_dict[thing] = thing
+        return tuple(returns)
 
     def __check_root_expression(self, expr):
         if expr.parent == None:
@@ -435,6 +435,8 @@ class ResolverVisitor(object):
         unary_expr.resolution_symbols['inputs'] = unary_expr.expression.resolution_symbols['inputs']
         unary_expr.resolution_symbols['outputs'] = unary_expr.expression.resolution_symbols['outputs']
 
+        self.__check_root_expression(unary_expr)
+
     @multimethod(CompositionExpression)
     def visit(self, comp_expr):
         # The inputs and output of this component
@@ -473,7 +475,19 @@ class ResolverVisitor(object):
 
     @multimethod(ParallelWithScalarExpression)
     def visit(self, para_scalar_expr):
-        pass
+        # Inputs are all the union of the top and bottom component inputs
+        top_inputs = set(para_scalar_expr.left.resolution_symbols['inputs'])
+        bottom_inputs = set(para_scalar_expr.right.resolution_symbol['inputs'])
+        inputs = [i for i in top_inputs.union(bottom_inputs)]
+
+        # Outputs of component is the top and bottom components' outputs
+        top_outputs = para_scalar_expr.left.resolution_symbols['outputs']
+        bottom_outputs = para_scalar_expr.right.resolution_symbols['outputs']
+
+        para_scalar_expr.resolution_symbols['inputs'] = inputs
+        para_scalar_expr.resolution_symbols['outputs'] = (top_outputs, bottom_outputs)
+
+        self.__check_root_expression(para_scalar_expr)
 
     @multimethod(FirstExpression)
     def visit(self, first_expr):
