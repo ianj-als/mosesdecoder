@@ -32,7 +32,7 @@ import com.capitati.smartmate.components.mert as mert
 #                                                             trg_language_model_order, trg_language_model_type}
 #
 component training_pipeline
-  inputs src_filename, trg_filename, src_filename
+  inputs src_filename, trg_filename
   output moses_ini_file, moses_ini_file
   configuration source_language,
                 target_language,

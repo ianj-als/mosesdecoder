@@ -18,6 +18,7 @@ from expressions import Literal, \
      SplitExpression, \
      MergeExpression, \
      WireExpression, \
+     WireTupleExpression, \
      IdentifierExpression, \
      LiteralExpression
 from mappings import Mapping, \
@@ -172,11 +173,14 @@ def p_merge_expression(p):
 
 def p_wire_expression(p):
     '''wire_expression : WIRE wire_mappings
-                       | WIRE '(' wire_mappings ')' '''
+                       | WIRE '(' wire_mappings ')' ',' '(' wire_mappings ')' '''
     if len(p) < 4:
-        p[0] = WireExpression(p.parser.filename, p.lineno(1), p[2])
+        p[0] = WireExpression(p.parser.filename, p.lineno(1), tuple(p[2]))
     else:
-        p[0] = WireExpression(p.parser.filename, p.lineno(1), tuple(p[3]))
+        p[0] = WireTupleExpression(p.parser.filename,
+                                   p.lineno(1),
+                                   tuple(p[3]),
+                                   tuple(p[7]))
 
 def p_identifier_expression(p):
     '''identifier_expression : identifier_or_qual_identifier'''
@@ -218,10 +222,10 @@ def p_wire_mapping(p):
     p[0] = Mapping(p.parser.filename, p[1].lineno, p[1], p[3])
 
 def p_scalar_or_tuple_identifier_comma_list(p):
-    '''scalar_or_tuple_identifier_comma_list : '(' identifier_comma_list ')'
+    '''scalar_or_tuple_identifier_comma_list : '(' identifier_comma_list ')' ',' '(' identifier_comma_list ')'
                                              | identifier_comma_list'''
     if len(p) > 2:
-        p[0] = tuple(p[2])
+        p[0] = (p[2], p[6])
     else:
         p[0] = p[1]
 

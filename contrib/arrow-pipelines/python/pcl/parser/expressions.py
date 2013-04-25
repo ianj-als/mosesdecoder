@@ -149,6 +149,29 @@ class WireExpression(Expression):
                (self.mapping.__repr__(),
                 super(WireExpression, self).__repr__())
 
+class WireTupleExpression(Expression):
+    def __init__(self, filename, lineno, top_wire_mapping, bottom_wire_mapping):
+        Expression.__init__(self, filename, lineno)
+        self.top_mapping = top_wire_mapping
+        for tm in self.top_mapping:
+            tm.parent = self
+        self.bottom_mapping = bottom_wire_mapping
+        for bm in self.bottom_mapping:
+            bm.parent = self
+
+    def accept(self, visitor):
+        for top_map in self.top_mapping:
+            top_map.accept(visitor)
+        for bottom_map in self.bottom_mapping:
+            bottom_map.accept(visitor)
+        visitor.visit(self)
+
+    def __repr__(self):
+        return "<WireTupleExpression: top mapping = %s, bottom mapping = %s, expression = %s>" % \
+               (self.top_mapping.__repr__(),
+                self.bottom_mapping.__repr__(),
+                super(WireTupleExpression, self).__repr__())
+
 class IdentifierExpression(Expression):
     def __init__(self, filename, lineno, identifier):
         Expression.__init__(self, filename, lineno)

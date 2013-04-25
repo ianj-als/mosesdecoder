@@ -21,7 +21,7 @@ import com.capitati.smartmate.components.model_training as model_training
 #                                                                     |         model_directory::String}                   |
 #                                                                     \----------------------------------------------------/
 #
-component src_trg_tokeniser
+component translation_model_training
   inputs src_filename, trg_filename
   outputs evaluation_data_filename, moses_ini_filename
   configuration model_training.max_segment_length,

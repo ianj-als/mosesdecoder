@@ -1,3 +1,4 @@
+import collections
 import glob
 import os
 
@@ -16,6 +17,7 @@ from parser.expressions import Literal, \
      SplitExpression, \
      MergeExpression, \
      WireExpression, \
+     WireTupleExpression, \
      IdentifierExpression, \
      LiteralExpression
 from parser.mappings import Mapping, \
@@ -50,6 +52,17 @@ class ResolverVisitor(object):
                                            split_identifier[-1])
 
         return module_filename + ".[Pp][Cc][Ll]", module_filename + ".[Pp][Yy]"
+
+    @staticmethod
+    def __check_scalar_or_tuple_collection(collection):
+        if isinstance(collection, list):
+            return [x for x, y in collections.Counter(collection).items() if y > 1]
+        elif isinstance(collection, tuple):
+            a = [x for x, y in collections.Counter(collection[0]).items() if y > 1]
+            a.extend([x for x, y in collections.Counter(collection[1]).items() if y > 1])
+            return a
+
+        return list()
 
     def __add_identifiers_to_symbol_table(self, things, symbol_group_key):
         """Check for duplicate identifiers in a collection and add them
@@ -136,6 +149,32 @@ class ResolverVisitor(object):
                 tuple(unknown_module_configuration),
                 tuple(python_module_interface))
 
+    def __check_root_expression(self, expr):
+        if expr.parent == None:
+            # Root expression, so get inputs and outpus
+            # from module defined inputs and outputs clauses
+            expected_inputs = self.__module.definition.inputs
+            expected_outputs = self.__module.definition.outputs
+
+            # The expression's inputs and outputs
+            inputs = expr.resolution_symbols['inputs']
+            outputs = expr.resolution_symbols['outputs']
+
+            if expected_inputs != inputs:
+                self.__errors.append("ERROR: %s at line %d component " \
+                                     "expects inputs %s, but got %s" % \
+                                     (expr.filename,
+                                      expr.lineno,
+                                      expected_inputs,
+                                      inputs))
+            if expected_outputs != outputs:
+                self.__errors.append("ERROR: %s at line %d component " \
+                                     "expects outputs %s, but got %s" % \
+                                     (expr.filename,
+                                      expr.lineno,
+                                      expected_outputs,
+                                      outputs))
+
     @staticmethod
     def __add_messages(msg_fmt, collection, unpack_fn, msg_collection):
         for entity in collection:
@@ -165,8 +204,6 @@ class ResolverVisitor(object):
         self.__module = module
         self.__module.resolution_symbols = {'imports' : dict(),
                                             'components' : dict(),
-                                            'inputs' : dict(),
-                                            'outputs' : dict(),
                                             'configuration' : dict()}
 
     @multimethod(Import)
@@ -304,8 +341,8 @@ class ResolverVisitor(object):
 
         # Add the inputs, outputs, configuration and declaration identifiers to
         # the module's symbol table
-        duplicate_inputs = self.__add_identifiers_to_symbol_table(component.inputs, 'inputs')
-        duplicate_outputs = self.__add_identifiers_to_symbol_table(component.outputs, 'outputs')
+        duplicate_inputs = ResolverVisitor.__check_scalar_or_tuple_collection(component.inputs)
+        duplicate_outputs = ResolverVisitor.__check_scalar_or_tuple_collection(component.outputs)
         duplicate_config = self.__add_identifiers_to_symbol_table(component.configuration, 'configuration')
         duplicate_decl_identifiers = self.__add_identifiers_to_symbol_table(component.declarations, 'components')
 
@@ -398,32 +435,6 @@ class ResolverVisitor(object):
         unary_expr.resolution_symbols['inputs'] = unary_expr.expression.resolution_symbols['inputs']
         unary_expr.resolution_symbols['outputs'] = unary_expr.expression.resolution_symbols['outputs']
 
-    def __check_root_expression(self, expr):
-        if expr.parent == None:
-            # Root expression, so get inputs and outpus
-            # from module defined inputs and outputs clauses
-            expected_inputs = self.__module.definition.inputs
-            expected_outputs = self.__module.definition.outputs
-
-            # The expression's inputs and outputs
-            inputs = expr.resolution_symbols['inputs']
-            outputs = expr.resolution_symbols['outputs']
-
-            if expected_inputs != inputs:
-                self.__errors.append("ERROR: %s at line %d component " \
-                                     "expects inputs %s, but got %s" % \
-                                     (expr.filename,
-                                      expr.lineno,
-                                      expected_inputs,
-                                      inputs))
-            if expected_outputs != outputs:
-                self.__errors.append("ERROR: %s at line %d component " \
-                                     "expects outputs %s, but got %s" % \
-                                     (expr.filename,
-                                      expr.lineno,
-                                      expected_outputs,
-                                      outputs))
-
     @multimethod(CompositionExpression)
     def visit(self, comp_expr):
         # The inputs and output of this component
@@ -434,7 +445,6 @@ class ResolverVisitor(object):
         # compatible
         left_outputs = comp_expr.left.resolution_symbols['outputs']
         right_inputs = comp_expr.right.resolution_symbols['inputs']
-        print "\n\nLeft outs = %s\nRight ins = %s\n\n" % (left_outputs, right_inputs)
         if left_outputs != right_inputs:
             self.__errors.append("ERROR: %s at line %d attempted composition "\
                                  "with incompatible components" % \
@@ -485,12 +495,17 @@ class ResolverVisitor(object):
     def visit(self, wire_expr):
         inputs = [m.from_ for m in wire_expr.mapping]
         outputs = [m.to for m in wire_expr.mapping]
-        if isinstance(wire_expr.mapping, tuple):
-            inputs = tuple(inputs)
-            outputs = tuple(outputs)
-
         wire_expr.resolution_symbols['inputs'] = inputs
         wire_expr.resolution_symbols['outputs'] = outputs
+
+    @multimethod(WireTupleExpression)
+    def visit(self, wire_tuple_expr):
+        top_inputs = [m.from_ for m in wire_tuple_expr.top_mapping]
+        top_outputs = [m.to for m in wire_tuple_expr.top_mapping]
+        bottom_inputs = [m.from_ for m in wire_tuple_expr.bottom_mapping]
+        bottom_outputs = [m.to for m in wire_tuple_expr.bottom_mapping]
+        wire_tuple_expr.resolution_symbols['inputs'] = (top_inputs, bottom_inputs)
+        wire_tuple_expr.resolution_symbols['outputs'] = (top_outputs, bottom_outputs)
 
     @multimethod(Mapping)
     def visit(self, mapping):
@@ -528,8 +543,6 @@ class ResolverVisitor(object):
 
         get_inputs_fn = module_spec['get_inputs_fn']
         get_outputs_fn = module_spec['get_outputs_fn']
-
-        print "\n\nINPUTS = %s\nOUTPUTS = %s\n\n" % (get_inputs_fn(), get_outputs_fn())
 
         iden_expr.resolution_symbols['inputs'] = [Identifier(None, 0, i) for i in get_inputs_fn()]
         iden_expr.resolution_symbols['outputs'] = [Identifier(None, 0, i) for i in get_outputs_fn()]

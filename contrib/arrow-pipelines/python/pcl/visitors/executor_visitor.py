@@ -13,6 +13,7 @@ from parser.expressions import Literal, \
      SplitExpression, \
      MergeExpression, \
      WireExpression, \
+     WireTupleExpression, \
      IdentifierExpression, \
      LiteralExpression
 from parser.mappings import Mapping, \
@@ -74,6 +75,10 @@ class ExecutorVisitor(object):
 
     @multimethod(WireExpression)
     def visit(self, wire_expr):
+        pass
+
+    @multimethod(WireTupleExpression)
+    def visit(self, wire_tuple_expr):
         pass
 
     @multimethod(Mapping)

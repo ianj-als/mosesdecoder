@@ -16,8 +16,8 @@ import com.capitati.smartmate.components.tokenizer as tokeniser
 #                                           moses_installation_dir::String}        moses_installation_dir::String}
 #
 component src_trg_tokeniser
-  inputs (src_filename, trg_filename)
-  outputs (tokenised_src_filename, tokenised_trg_filename)
+  inputs (src_filename), (trg_filename)
+  outputs (tokenised_src_filename), (tokenised_trg_filename)
   configuration tokeniser.src.language,
                 tokeniser.src.tokenisation_dir,
                 tokeniser.trg.language,
@@ -33,9 +33,9 @@ component src_trg_tokeniser
       tokeniser.trg.tokenisation_dir -> tokenisation_dir,
       tokeniser.moses.installation -> moses_installation_dir
   as
-    wire (src_filename -> filename,
-          trg_filename -> filename) >>>
+    wire (src_filename -> filename),
+         (trg_filename -> filename) >>>
     (src_tokeniser *** trg_tokeniser) >>>
-    wire (tokenised_filename -> tokenised_src_filename,
-          tokenised_filename -> tokenised_trg_filename)
+    wire (tokenised_filename -> tokenised_src_filename),
+         (tokenised_filename -> tokenised_trg_filename)
 
