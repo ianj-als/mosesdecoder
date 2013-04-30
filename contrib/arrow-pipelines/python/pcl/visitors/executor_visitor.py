@@ -41,6 +41,10 @@ class ExecutorVisitor(object):
     def visit(self, decl):
         pass
 
+    @multimethod(object)
+    def visit(self, nowt):
+        pass
+
     @multimethod(UnaryExpression)
     def visit(self, unary_expr):
         pass

@@ -21,6 +21,9 @@ class Literal(Entity):
             return False
         return self.value == other.value
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 class Identifier(Entity):
     def __init__(self, filename, lineno, identifier):
         Entity.__init__(self, filename, lineno)
@@ -42,6 +45,9 @@ class Identifier(Entity):
             return False
         return self.identifier == other.identifier
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 class Expression(Entity):
     def __init__(self, filename, lineno, parent_expr = None):
         Entity.__init__(self, filename, lineno)
@@ -52,8 +58,10 @@ class Expression(Entity):
         visitor.visit(self)
 
     def __repr__(self):
-        return "<Expression: resolve syms = %s, entity = %s>" % \
-               (self.resolution_symbols, super(Expression, self).__repr__())
+        return "<Expression:\n\tresolve syms = %s,\n\tparent = %s,\n\tentity = %s>" % \
+               (self.resolution_symbols,
+                None, #self.parent.__str__() if self.parent else None,
+                super(Expression, self).__repr__())
 
 class UnaryExpression(Expression):
      def __init__(self, filename, lineno, expression):
@@ -66,7 +74,7 @@ class UnaryExpression(Expression):
          visitor.visit(self)
 
      def __repr__(self):
-        return "<UnaryExpression: unary = %s, expression = %s>" % \
+        return "<UnaryExpression:\n\tunary = %s,\n\texpression = %s>" % \
                (self.expression.__repr__(),
                 super(UnaryExpression, self).__repr__())
 
@@ -84,7 +92,7 @@ class BinaryExpression(Expression):
         visitor.visit(self)
 
     def __repr__(self):
-        return "<BinaryExpression: left = %s, right = %s, expression = %s>" % \
+        return "<BinaryExpression:\n\tleft = %s,\n\tright = %s,\n\texpression = %s>" % \
                (self.left.__repr__(),
                 self.right.__repr__(),
                 super(BinaryExpression, self).__repr__())
@@ -94,7 +102,7 @@ class CompositionExpression(BinaryExpression):
         BinaryExpression.__init__(self, filename, lineno, left_expr, right_expr)
 
     def __repr__(self):
-        return "<CompositionExpression: binary expr = %s>" % \
+        return "<CompositionExpression:\n\tbinary expr = %s>" % \
                (super(CompositionExpression, self).__repr__())
 
 class ParallelWithTupleExpression(BinaryExpression):
@@ -102,7 +110,7 @@ class ParallelWithTupleExpression(BinaryExpression):
         BinaryExpression.__init__(self, filename, lineno, left_expr, right_expr)
 
      def __repr__(self):
-        return "<ParallelWithTupleExpression: binary expr = %s>" % \
+        return "<ParallelWithTupleExpression:\n\tbinary expr = %s>" % \
                (super(ParallelWithTupleExpression, self).__repr__())
 
 class ParallelWithScalarExpression(BinaryExpression):
@@ -120,6 +128,10 @@ class SecondExpression(UnaryExpression):
 class SplitExpression(Expression):
     def __init__(self, filename, lineno):
         Expression.__init__(self, filename, lineno)
+
+    def __repr__(self):
+        return "<SplitExpression:\n\texpression = %s>" % \
+               (super(SplitExpression, self).__repr__())
 
 class MergeExpression(Expression):
     def __init__(self, filename, lineno, merge_mapping):
@@ -184,7 +196,7 @@ class IdentifierExpression(Expression):
         return str(self.identifier)
 
     def __repr__(self):
-        return "<IdentifierExpression: identifier = %s, expression = %s>" % \
+        return "<IdentifierExpression:\n\tidentifier = %s,\n\texpression = %s>" % \
                (self.identifier.__repr__(),
                 super(IdentifierExpression, self).__repr__())
 
@@ -200,6 +212,6 @@ class LiteralExpression(Expression):
         return str(self.literal)
 
     def __repr__(self):
-        return "<LiteralExpression: literal = %s, expression = %s>" % \
+        return "<LiteralExpression:\n\tliteral = %s,\n\texpression = %s>" % \
                (self.literal.__repr__(),
                 super(LiteralExpression, self).__repr__())

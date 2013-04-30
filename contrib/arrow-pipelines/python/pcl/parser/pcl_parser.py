@@ -29,12 +29,20 @@ from module import Module
 
 
 def p_module(p):
-    '''module : imports_list component_definition'''
+    '''module : opt_imports_list component_definition'''
     p[0] = Module(p.parser.filename, p.lineno(1), p[1], p[2])
     # Store the parent module in the imports and definition objects
     for import_ in p[1]:
         import_.module = p[0]
     p[2].module = p[0]
+
+def p_opt_imports_list(p):
+    '''opt_imports_list : imports_list
+                        | '''
+    if len(p) > 1:
+        p[0] = p[1]
+    else:
+        p[0] = list()
 
 def p_imports_list(p):
     '''imports_list : import_spec imports_list
@@ -67,12 +75,16 @@ def p_opt_configuration(p):
                          | '''
     if len(p) > 1:
         p[0] = p[2]
+    else:
+        p[0] = list()
 
 def p_opt_declarations(p):
     '''opt_declarations : DECLARE declarations
                         | '''
     if len(p) > 1:
         p[0] = p[2]
+    else:
+        p[0] = list()
 
 def p_declarations(p):
     '''declarations : declaration declarations
@@ -153,7 +165,7 @@ def p_unary_expression(p):
     if len(p) > 2:
         p[0] = UnaryExpression(p.parser.filename, p[2].lineno, p[2])
     else:
-        p[0] = UnaryExpression(p.parser.filename, p[1].lineno, p[1])
+        p[0] = p[1]
 
 def p_first_expression(p):
     '''first_expression : FIRST expression'''
@@ -253,6 +265,11 @@ def p_literal(p):
                | STRING'''
     p[0] = Literal(p.parser.filename, p.lineno(1), p[1])
 
+def p_error(p):
+    print "ERROR: line %d parser failure at or near %s" % \
+           (p.lineno,
+            p.type)
+    yacc.errok()
 
 class PCLParser(object):
     def __init__(self, lexer, logger, **kwargs):

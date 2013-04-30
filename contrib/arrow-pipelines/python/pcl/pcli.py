@@ -2,23 +2,21 @@ import os
 import sys
 
 from parser.helpers import parse_component
-from visitors.resolver_visitor import ResolverVisitor
+from parser.resolver import Resolver
 from visitors.executor_visitor import ExecutorVisitor
 
 
 if __name__ == '__main__':
     ast = parse_component(sys.argv[1])
-    print ast
 
     pcl_import_path = os.getenv("PCL_IMPORT_PATH", ".")
     python_import_path = os.getenv("PYTHONPATH", ".")
-    resolver = ResolverVisitor(pcl_import_path, python_import_path)
-    ast.accept(resolver)
+    resolver = Resolver(pcl_import_path, python_import_path)
+    resolver.resolve(ast)
     for warning in resolver.get_warnings():
         print warning
-    errors = resolver.get_errors()
-    if errors:
-        for error in errors:
+    if resolver.has_errors():
+        for error in resolver.get_errors():
             print error
     else:
         executor = ExecutorVisitor()

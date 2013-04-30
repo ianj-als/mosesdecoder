@@ -11,6 +11,7 @@ class Module(Entity):
         for an_import in self.imports:
             an_import.accept(visitor)
         self.definition.accept(visitor)
+        visitor.visit(object())
 
     def __str__(self):
         return self.filename

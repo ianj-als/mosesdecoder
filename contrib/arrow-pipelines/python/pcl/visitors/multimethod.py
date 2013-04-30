@@ -18,12 +18,15 @@ def multimethod(*types):
         class_registry[types] = method
         def wrapper(target_obj, *args, **kwargs):
             global registry
-            keys = __make_key(target_obj.__class__, [arg.__class__ for arg in args])
-            target_method = registry[keys]
-            if target_method:
-                return target_method(target_obj, *args, **kwargs)
-            else:
-                raise LookupError("Method not registered for type %s" % arg_types)
+            target_method = None
+            for klass in target_obj.__class__.__mro__:
+                keys = __make_key(klass, [arg.__class__ for arg in args])
+                if registry.has_key(keys):
+                    target_method = registry[keys]
+                    return target_method(target_obj, *args, **kwargs)
+            if not target_method:
+                raise LookupError("Method not registered on class %s for type %s" % \
+                                  (type(target_obj), [arg.__class__ for arg in args]))
         return wrapper
     return decorator
 
