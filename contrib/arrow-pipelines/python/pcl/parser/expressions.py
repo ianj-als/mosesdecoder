@@ -1,5 +1,8 @@
 from entity import Entity
 
+from mappings import TopMapping, BottomMapping, LiteralMapping
+
+
 class Literal(Entity):
     def __init__(self, filename, lineno, value):
          Entity.__init__(self, filename, lineno)
@@ -136,11 +139,17 @@ class SplitExpression(Expression):
 class MergeExpression(Expression):
     def __init__(self, filename, lineno, merge_mapping):
         Expression.__init__(self, filename, lineno)
-        self.mapping = merge_mapping
-        self.mapping.parent = self
+        self.top_mapping = filter(lambda m: isinstance(m, TopMapping),
+                                  merge_mapping)
+        self.bottom_mapping = filter(lambda m: isinstance(m, BottomMapping),
+                                     merge_mapping)
+        self.literal_mapping = filter(lambda m: isinstance(m, LiteralMapping),
+                                      merge_mapping)
+        for m in self.top_mapping + self.bottom_mapping + self.literal_mapping:
+            m.parent = self
 
     def accept(self, visitor):
-        for merge_map in self.mapping:
+        for merge_map in self.top_mapping + self.bottom_mapping + self.literal_mapping:
             merge_map.accept(visitor)
         visitor.visit(self)
 

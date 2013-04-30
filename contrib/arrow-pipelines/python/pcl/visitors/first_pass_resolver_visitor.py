@@ -507,7 +507,42 @@ class FirstPassResolverVisitor(ResolverVisitor):
 
     @multimethod(MergeExpression)
     def visit(self, merge_expr):
-        pass
+        top_from_identifiers = [m.from_ for m in merge_expr.top_mapping]
+        bottom_from_identifiers = [m.from_ for m in merge_expr.bottom_mapping]
+        duplicate_top_in_identifiers = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(top_from_identifiers)
+        duplicate_bottom_in_identifiers = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(bottom_from_identifiers)
+
+        all_out_mappings = list(merge_expr.top_mapping)
+        all_out_mappings.extend(merge_expr.bottom_mapping)
+        all_out_mappings.extend(merge_expr.literal_mapping)
+
+        all_to_identifiers = [m.to for m in all_out_mappings]
+        duplicate_out_identifiers = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(all_to_identifiers)
+
+        if duplicate_top_in_identifiers or \
+           duplicate_bottom_in_identifiers or \
+           duplicate_out_identifiers:
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d merge top mapping " \
+                             "contains duplicate identifier %(entity)s",
+                             duplicate_top_in_identifiers,
+                             lambda e: {'entity' : e,
+                                        'filename' : e.filename,
+                                        'lineno' : e.lineno})
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d merge bottom mapping " \
+                             "contains duplicate identifier %(entity)s",
+                             duplicate_bottom_in_identifiers,
+                             lambda e: {'entity' : e,
+                                        'filename' : e.filename,
+                                        'lineno' : e.lineno})
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d merge output mapping " \
+                             "contains duplicate identifier %(entity)s",
+                             duplicate_out_identifiers,
+                             lambda e: {'entity' : e,
+                                        'filename' : e.filename,
+                                        'lineno' : e.lineno})
+
+        merge_expr.resolution_symbols['inputs'] = Just((set(top_from_identifiers), set(bottom_from_identifiers)))
+        merge_expr.resolution_symbols['outputs'] = Just(set(all_to_identifiers))
 
     @multimethod(WireExpression)
     def visit(self, wire_expr):

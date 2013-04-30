@@ -143,7 +143,6 @@ def p_parallel_with_tuple_expression(p):
         p[0] = p[1]
     else:
         p[0] = ParallelWithTupleExpression(p.parser.filename, p[1].lineno, p[1], p[3])
-        print p[0].__repr__()
 
 def p_parallel_with_scalar_expression(p):
     '''parallel_with_scalar_expression : unary_expression
@@ -214,10 +213,10 @@ def p_merge_mapping(p):
     '''merge_mapping : TOP '[' identifier_or_qual_identifier ']' MAPS_TO identifier_or_qual_identifier
                      | BOTTOM '[' identifier_or_qual_identifier ']' MAPS_TO identifier_or_qual_identifier
                      | literal MAPS_TO identifier_or_qual_identifier'''
-    if p[1] == 'TOP':
-        p[0] = TopMapping(p.parser.filename, p.lineno(1), p[3], p[5])
-    elif p[1] == 'BOTTOM':
-        p[0] = BottomMapping(p.parser.filename, p.lineno(1), p[3], p[5])
+    if str(p[1]).upper() == 'TOP':
+        p[0] = TopMapping(p.parser.filename, p.lineno(1), p[3], p[6])
+    elif str(p[1]).upper() == 'BOTTOM':
+        p[0] = BottomMapping(p.parser.filename, p.lineno(1), p[3], p[6])
     else:
         p[0] = LiteralMapping(p.parser.filename, p.lineno(1), p[1], p[3])
 

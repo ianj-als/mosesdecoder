@@ -9,13 +9,13 @@ class ResolverVisitor(object):
             info = unpack_fn(entity)
             msg_collection.append(msg_fmt % info)
 
-    def __add_errors(self, msg_fmt, collection, unpack_fn):
+    def _add_errors(self, msg_fmt, collection, unpack_fn):
         ResolverVisitor.__add_messages(msg_fmt,
                                        collection,
                                        unpack_fn,
                                        self._errors)
 
-    def __add_warnings(self, msg_fmt, collection, unpack_fn):
+    def _add_warnings(self, msg_fmt, collection, unpack_fn):
         ResolverVisitor.__add_messages(msg_fmt,
                                        collection,
                                        unpack_fn,
