@@ -28,6 +28,10 @@ from mappings import Mapping, \
 from module import Module
 
 
+precedence = (('nonassoc', 'NONASSOC'),
+              ('left', 'COMPOSITION', 'PARALLEL_WITH_TUPLE', 'PARALLEL_WITH_SCALAR'),
+              ('right', 'UNARY'))
+
 def p_module(p):
     '''module : opt_imports_list component_definition'''
     p[0] = Module(p.parser.filename, p.lineno(1), p[1], p[2])
@@ -167,24 +171,24 @@ def p_unary_expression(p):
         p[0] = p[1]
 
 def p_first_expression(p):
-    '''first_expression : FIRST expression'''
+    '''first_expression : FIRST expression %prec UNARY'''
     p[0] = FirstExpression(p.parser.filename, p.lineno(1), p[2])
 
 def p_second_expression(p):
-     '''second_expression : SECOND expression'''
+     '''second_expression : SECOND expression %prec UNARY'''
      p[0] = SecondExpression(p.parser.filename, p.lineno(1), p[2])
 
 def p_split_expression(p):
-    '''split_expression : SPLIT'''
+    '''split_expression : SPLIT %prec NONASSOC'''
     p[0] = SplitExpression(p.parser.filename, p.lineno(1))
 
 def p_merge_expression(p):
-    '''merge_expression : MERGE merge_mappings'''
+    '''merge_expression : MERGE merge_mappings %prec NONASSOC'''
     p[0] = MergeExpression(p.parser.filename, p.lineno(1), p[2])
 
 def p_wire_expression(p):
-    '''wire_expression : WIRE wire_mappings
-                       | WIRE '(' wire_mappings ')' ',' '(' wire_mappings ')' '''
+    '''wire_expression : WIRE wire_mappings %prec NONASSOC
+                       | WIRE '(' wire_mappings ')' ',' '(' wire_mappings ')' %prec UNARY'''
     if len(p) < 4:
         p[0] = WireExpression(p.parser.filename, p.lineno(1), tuple(p[2]))
     else:

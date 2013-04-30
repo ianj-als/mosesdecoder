@@ -12,12 +12,9 @@ class Resolver(object):
                                                     python_import_path))
 
     def resolve(self, ast):
-        last_visitor = None
         for visitor in self.__visitors:
-            if last_visitor:
-                visitor._set_module(last_visitor._module)
             ast.accept(visitor)
-            last_visitor = visitor
+        print ast.__repr__()
 
     def has_warnings(self):
         return reduce(lambda acc, r: acc + int(r.has_warnings()),

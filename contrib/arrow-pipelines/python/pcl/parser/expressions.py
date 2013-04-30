@@ -61,9 +61,8 @@ class Expression(Entity):
         visitor.visit(self)
 
     def __repr__(self):
-        return "<Expression:\n\tresolve syms = %s,\n\tparent = %s,\n\tentity = %s>" % \
+        return "<Expression:\n\tresolve syms = %s,\n\tentity = %s>" % \
                (self.resolution_symbols,
-                None, #self.parent.__str__() if self.parent else None,
                 super(Expression, self).__repr__())
 
 class UnaryExpression(Expression):
@@ -117,16 +116,28 @@ class ParallelWithTupleExpression(BinaryExpression):
                (super(ParallelWithTupleExpression, self).__repr__())
 
 class ParallelWithScalarExpression(BinaryExpression):
-     def __init__(self, filename, lineno, left_expr, right_expr):
+    def __init__(self, filename, lineno, left_expr, right_expr):
         BinaryExpression.__init__(self, filename, lineno, left_expr, right_expr)
+
+    def __repr__(self):
+        return "<ParallelWithScalarExpression:\n\tbinary expr = %s>" % \
+               (super(ParallelWithTupleExpression, self).__repr__())
 
 class FirstExpression(UnaryExpression):
     def __init__(self, filename, lineno, expr):
         UnaryExpression.__init__(self, filename, lineno, expr)
 
+    def __repr__(self):
+        return "<FirstExpression:\n\tunary expr = %s>" % \
+               (super(FirstExpression, self).__repr__())
+
 class SecondExpression(UnaryExpression):
     def __init__(self, filename, lineno, expr):
         UnaryExpression.__init__(self, filename, lineno, expr)
+
+    def __repr__(self):
+        return "<SecondExpression:\n\tunary expr = %s>" % \
+               (super(SecondExpression, self).__repr__())
 
 class SplitExpression(Expression):
     def __init__(self, filename, lineno):
@@ -152,6 +163,13 @@ class MergeExpression(Expression):
         for merge_map in self.top_mapping + self.bottom_mapping + self.literal_mapping:
             merge_map.accept(visitor)
         visitor.visit(self)
+
+    def __repr__(self):
+        return "<MergeExpression:\n\ttop = %s,\n\tbottom = %s\n\tliteral = %s, expr = %s>" % \
+               (self.top_mapping.__repr__(),
+                self.bottom_mapping.__repr__(),
+                self.literal_mapping.__repr__(),
+                super(MergeExpression, self).__repr__())
 
 class WireExpression(Expression):
     def __init__(self, filename, lineno, wire_mapping):

@@ -33,7 +33,6 @@ reserved = {
 #
 tokens = [
     'ASSIGN',
-    'COMMA',
     'QUALIFIED_IDENTIFIER', 'IDENTIFIER',
     'COMPOSITION',
     'FLOAT',

@@ -8,6 +8,7 @@ from parser.component import Component
 from parser.declaration import Declaration
 from parser.expressions import Literal, \
      Identifier, \
+     Expression, \
      UnaryExpression, \
      BinaryExpression, \
      CompositionExpression, \
@@ -30,6 +31,20 @@ from parser.helpers import parse_component
 from pypeline.core.types.just import Just
 from pypeline.core.types.nothing import Nothing
 from resolver_visitor import ResolverVisitor
+
+
+# Decorator to prevent resolving more than once
+def resolve_expression_once(method):
+    def resolve_once_wrapper(target_obj, *args, **kwargs):
+        expr = args[0]
+        if isinstance(expr, Expression) and \
+           (expr.resolution_symbols.has_key('inputs') is False or \
+            expr.resolution_symbols.has_key('outputs') is False or \
+            isinstance(expr.resolution_symbols['inputs'], Nothing) or \
+            isinstance(expr.resolution_symbols['outputs'], Nothing)):
+            return method(target_obj, *args, **kwargs)
+
+    return resolve_once_wrapper
 
 
 @multimethodclass
@@ -156,15 +171,13 @@ class FirstPassResolverVisitor(ResolverVisitor):
             symbol_dict[thing] = thing
         return tuple(returns)
 
-    def _set_module(self, module):
-        self._module = module
-
     @multimethod(Module)
     def visit(self, module):
-        self._set_module(module)
-        self._module.resolution_symbols = {'imports' : dict(),
-                                           'components' : dict(),
-                                           'configuration' : dict()}
+        self._module = module
+        if not self._module.__dict__.has_key("resolution_symbols"):
+            self._module.resolution_symbols = {'imports' : dict(),
+                                               'components' : dict(),
+                                               'configuration' : dict()}
 
     @multimethod(Import)
     def visit(self, an_import):
@@ -401,25 +414,9 @@ class FirstPassResolverVisitor(ResolverVisitor):
 
     @multimethod(CompositionExpression)
     def visit(self, comp_expr):
-        # The inputs and output of this component
-        inputs = comp_expr.left.resolution_symbols['inputs']
-        outputs = comp_expr.right.resolution_symbols['outputs']
-
-        # Check that the composing components are output/input
-        # compatible
-        left_outputs = comp_expr.left.resolution_symbols['outputs']
-        right_inputs = comp_expr.right.resolution_symbols['inputs']
-        if left_outputs != right_inputs:
-            self._errors.append("ERROR: %s at line %d attempted composition " \
-                                "with incompatible components, expected %s, got %s" % \
-                                (comp_expr.filename,
-                                 comp_expr.lineno,
-                                 left_outputs,
-                                 right_inputs))
-
         # The inputs and outputs for this composed component
-        comp_expr.resolution_symbols['inputs'] = inputs
-        comp_expr.resolution_symbols['outputs'] = outputs
+        comp_expr.resolution_symbols['inputs'] = comp_expr.left.resolution_symbols['inputs']
+        comp_expr.resolution_symbols['outputs'] = comp_expr.right.resolution_symbols['outputs']
 
     @multimethod(ParallelWithTupleExpression)
     def visit(self, para_tuple_expr):
@@ -456,56 +453,25 @@ class FirstPassResolverVisitor(ResolverVisitor):
                                                           (lambda bouts: Just((touts, bouts))))
 
     @multimethod(FirstExpression)
+    @resolve_expression_once
     def visit(self, first_expr):
-        pass
+        first_expr.resolution_symbols['inputs'] = Nothing()
+        first_expr.resolution_symbols['outputs'] = Nothing()
 
     @multimethod(SecondExpression)
+    @resolve_expression_once
     def visit(self, second_expr):
-        pass
+        second_expr.resolution_symbols['inputs'] = Nothing()
+        second_expr.resolution_symbols['outputs'] = Nothing()
 
     @multimethod(SplitExpression)
+    @resolve_expression_once
     def visit(self, split_expr):
-        # Assume we don't know the inputs and output "types"
-        inputs = Nothing()
-
-        if split_expr.parent:
-            node = split_expr.parent
-            last_child = split_expr
-            while True:
-                if isinstance(node, BinaryExpression):
-                    if node.left is last_child:
-                        if node.resolution_symbols.has_key('inputs'):
-                            inputs = node.resolution_symbols['inputs']
-                            break
-                    else:
-                        inputs = node.right.resolution_symbols['outputs'] \
-                                 if node.right.resolution_symbols.has_key('outputs') \
-                                 else Nothing()
-                        break
-                elif isinstance(node, UnaryExpression):
-                    if node.resolution_symbols.has_key('inputs'):
-                        inputs = node.resolution_symbols['inputs']
-                        break
-                else:
-                    raise Exception("Unexpected expression type: %s" % type(node))
-
-                last_child = node
-                node = node.parent
-                if node is None:
-                    inputs = Just(set(self._module.definition.inputs))
-                    break
-
-            if split_expr.parent.right is split_expr and \
-               split_expr.parent.left.resolution_symbols.has_key('outputs'):
-                inputs = split_expr.parent.left.resolution_symbols['outputs']
-        else:
-            # Root expression, expected inputs are the inputs to the component
-            inputs = Just(set(self._module.definition.inputs))
-
-        split_expr.resolution_symbols['inputs'] = inputs
-        split_expr.resolution_symbols['outputs'] = inputs >= (lambda ins: Just((ins, ins)))
+        split_expr.resolution_symbols['inputs'] = Nothing()
+        split_expr.resolution_symbols['outputs'] = Nothing()
 
     @multimethod(MergeExpression)
+    @resolve_expression_once
     def visit(self, merge_expr):
         top_from_identifiers = [m.from_ for m in merge_expr.top_mapping]
         bottom_from_identifiers = [m.from_ for m in merge_expr.bottom_mapping]
@@ -545,6 +511,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
         merge_expr.resolution_symbols['outputs'] = Just(set(all_to_identifiers))
 
     @multimethod(WireExpression)
+    @resolve_expression_once
     def visit(self, wire_expr):
         inputs = set([m.from_ for m in wire_expr.mapping])
         outputs = set([m.to for m in wire_expr.mapping])
@@ -552,6 +519,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
         wire_expr.resolution_symbols['outputs'] = Just(outputs)
 
     @multimethod(WireTupleExpression)
+    @resolve_expression_once
     def visit(self, wire_tuple_expr):
         top_inputs = set([m.from_ for m in wire_tuple_expr.top_mapping])
         top_outputs = set([m.to for m in wire_tuple_expr.top_mapping])
@@ -577,6 +545,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
         pass
 
     @multimethod(IdentifierExpression)
+    @resolve_expression_once
     def visit(self, iden_expr):
         # Imports and components symbol tables are needed
         imports_sym_table = self._module.resolution_symbols['imports']
