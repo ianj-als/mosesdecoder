@@ -89,30 +89,32 @@ class SecondPassResolverVisitor(FirstPassResolverVisitor):
         if node is None:
             return Just(set(self._module.definition.inputs))
 
-        print type(node)
-
         if isinstance(node, BinaryExpression):
             if node.left is child:
-                if node.resolution_symbols.has_key('inputs'):
+                if node.resolution_symbols.has_key('inputs') and \
+                   not isinstance(node.resolution_symbols['inputs'], Nothing):
                     return node.resolution_symbols['inputs']
             elif node.right is child:
                 if isinstance(node.parent, BinaryExpression):
-                    if node.parent.left.resolution_symbols.has_key('outputs'):
+                    if node.parent.left.resolution_symbols.has_key('outputs') and \
+                       not isinstance(node.parent.left.resolution_symbols['outputs'], Nothing):
                         return node.parent.left.resolution_symbols['outputs']
                 elif isinstance(node.parent, UnaryExpression):
-                    if node.parent.expression.resolution_symbols.has_key('outputs'):
+                    if node.parent.expression.resolution_symbols.has_key('outputs') and \
+                       not isinstance(node.parent.expression.resolution_symbols['outputs'], Nothing):
                         return node.parent.expression.resolution_symbols['outputs']
                 else:
                     raise Exception("Node's parent of unexpected type: %s" % type(node.parent))
             else:
                 raise Exception("Child is neither left or right: %s" % child.__repr__())
         elif isinstance(node, UnaryExpression):
-            if node.resolution_symbols.has_key('inputs'):
+            if node.resolution_symbols.has_key('inputs') and \
+               not isinstance(node.resolution_symbols['inputs'], Nothing):
                 return node.resolution_symbols['inputs']
         else:
             raise Exception("Unexpected expression type: %s" % type(node))
 
-        return SecondPassResolverVisitor.__walk_expression(node.parent, node)
+        return self.__walk_expression(node.parent, node)
 
     @multimethod(FirstExpression)
     @resolve_expression_once
@@ -122,6 +124,7 @@ class SecondPassResolverVisitor(FirstPassResolverVisitor):
 
         # Derive the bottom inputs
         inputs = self.__derive_inputs(first_expr)
+        print "FIRST INS: %s" % inputs
         bottom_inputs = inputs >= (lambda ins: Just(set(ins[1])) if isinstance(ins, tuple) else Just(set(ins)))
 
         first_expr.resolution_symbols['inputs'] = top_inputs >= (lambda tins: bottom_inputs >= \

@@ -513,20 +513,75 @@ class FirstPassResolverVisitor(ResolverVisitor):
     @multimethod(WireExpression)
     @resolve_expression_once
     def visit(self, wire_expr):
-        inputs = set([m.from_ for m in wire_expr.mapping])
-        outputs = set([m.to for m in wire_expr.mapping])
-        wire_expr.resolution_symbols['inputs'] = Just(inputs)
-        wire_expr.resolution_symbols['outputs'] = Just(outputs)
+        inputs = [m.from_ for m in wire_expr.mapping]
+        outputs = [m.to for m in wire_expr.mapping]
+
+        # Catch duplicates
+        duplicate_in_identifiers = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(inputs)
+        duplicate_out_identifiers = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(outputs)
+
+        if duplicate_in_identifiers or duplicate_out_identifiers:
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d wire mapping " \
+                             "contains duplicate input identifier %(entity)s",
+                             duplicate_in_identifiers,
+                             lambda e: {'entity' : e,
+                                        'filename' : e.filename,
+                                        'lineno' : e.lineno})
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d wire mapping " \
+                             "contains duplicate outputs identifier %(entity)s",
+                             duplicate_out_identifiers,
+                             lambda e: {'entity' : e,
+                                        'filename' : e.filename,
+                                        'lineno' : e.lineno})
+
+        wire_expr.resolution_symbols['inputs'] = Just(set(inputs))
+        wire_expr.resolution_symbols['outputs'] = Just(set(outputs))
 
     @multimethod(WireTupleExpression)
     @resolve_expression_once
     def visit(self, wire_tuple_expr):
-        top_inputs = set([m.from_ for m in wire_tuple_expr.top_mapping])
-        top_outputs = set([m.to for m in wire_tuple_expr.top_mapping])
-        bottom_inputs = set([m.from_ for m in wire_tuple_expr.bottom_mapping])
-        bottom_outputs = set([m.to for m in wire_tuple_expr.bottom_mapping])
-        wire_tuple_expr.resolution_symbols['inputs'] = Just((top_inputs, bottom_inputs))
-        wire_tuple_expr.resolution_symbols['outputs'] = Just((top_outputs, bottom_outputs))
+        top_inputs = [m.from_ for m in wire_tuple_expr.top_mapping]
+        top_outputs = [m.to for m in wire_tuple_expr.top_mapping]
+        bottom_inputs = [m.from_ for m in wire_tuple_expr.bottom_mapping]
+        bottom_outputs = [m.to for m in wire_tuple_expr.bottom_mapping]
+
+        # Catch duplicates
+        duplicate_top_in_identifiers = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(top_inputs)
+        duplicate_top_out_identifiers = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(top_outputs)
+        duplicate_bottom_in_identifiers = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(bottom_inputs)
+        duplicate_bottom_out_identifier = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(bottom_outputs)
+
+        if duplicate_top_in_identifiers or \
+           duplicate_top_out_identifiers or \
+           duplicate_bottom_in_identifiers or \
+           duplicate_bottom_out_identifier:
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d tuple wire mapping " \
+                             "contains duplicate top input identifier %(entity)s",
+                             duplicate_top_in_identifiers,
+                             lambda e: {'entity' : e,
+                                        'filename' : e.filename,
+                                        'lineno' : e.lineno})
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d tuple wire mapping " \
+                             "contains duplicate top output identifier %(entity)s",
+                             duplicate_top_out_identifiers,
+                             lambda e: {'entity' : e,
+                                        'filename' : e.filename,
+                                        'lineno' : e.lineno})
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d tuple wire mapping " \
+                             "contains duplicate bottom input identifier %(entity)s",
+                             duplicate_bottom_in_identifiers,
+                             lambda e: {'entity' : e,
+                                        'filename' : e.filename,
+                                        'lineno' : e.lineno})
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d tuple wire mapping " \
+                             "contains duplicate bottom output identifier %(entity)s",
+                             duplicate_bottom_out_identifier,
+                             lambda e: {'entity' : e,
+                                        'filename' : e.filename,
+                                        'lineno' : e.lineno})
+
+        wire_tuple_expr.resolution_symbols['inputs'] = Just((set(top_inputs), set(bottom_inputs)))
+        wire_tuple_expr.resolution_symbols['outputs'] = Just((set(top_outputs), set(bottom_outputs)))
 
     @multimethod(Mapping)
     def visit(self, mapping):
