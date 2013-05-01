@@ -176,6 +176,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
         else:
             # Import the Python module
             module_spec = {'module_name_id' : an_import.module_name}
+            imported_module = None
             try:
                 imported_module = __import__(str(an_import.module_name),
                                              fromlist = ['get_inputs',
@@ -183,6 +184,16 @@ class FirstPassResolverVisitor(ResolverVisitor):
                                                          'get_configuration',
                                                          'configure',
                                                          'initialise'])
+            except Exception as ie:
+                self._errors.append("ERROR: %s at line %d, error importing module %s: %s" % \
+                                    (an_import.filename,
+                                     an_import.lineno,
+                                     an_import.module_name,
+                                     str(ie)))
+
+            # Was the module imported?
+            if imported_module:
+                # Yes!
                 try:
                     get_inputs_fn = getattr(imported_module, 'get_inputs')
                 except AttributeError:
@@ -223,25 +234,20 @@ class FirstPassResolverVisitor(ResolverVisitor):
                                         "does not define initialise function" % \
                                         (an_import.filename, an_import.lineno,
                                          an_import.module_name))
+
+                # Record stuff from the imported Python module
                 module_spec.update({'module' : imported_module,
                                     'get_inputs_fn' : get_inputs_fn,
                                     'get_outputs_fn' : get_outputs_fn,
                                     'get_configuration_fn' : get_configuration_fn,
                                     'configure_fn' : configure_fn,
                                     'initialise_fn' : initialise_fn})
-            except ImportError:
-                self._errors.append("ERROR: %s at line %d, module %s not found" % \
-                                    (an_import.filename,
-                                     an_import.lineno,
-                                     an_import.module_name))
 
             # Always add the module alias as a key to the import dictionary
             import_symbol_dict[an_import.alias] = module_spec
 
     @multimethod(Component)
     def visit(self, component):
-        print "Component [%s]" % (component)
-
         # Add the inputs, outputs, configuration and declaration identifiers to
         # the module's symbol table
         duplicate_inputs = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(component.inputs)
