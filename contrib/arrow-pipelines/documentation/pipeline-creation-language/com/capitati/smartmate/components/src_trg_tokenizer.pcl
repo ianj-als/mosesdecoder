@@ -38,4 +38,3 @@ component src_trg_tokeniser
     (src_tokeniser *** trg_tokeniser) >>>
     wire (tokenised_filename -> tokenised_src_filename),
          (tokenised_filename -> tokenised_trg_filename)
-

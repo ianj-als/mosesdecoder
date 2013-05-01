@@ -212,8 +212,8 @@ class WireTupleExpression(Expression):
                 super(WireTupleExpression, self).__repr__())
 
 class IdentifierExpression(Expression):
-    def __init__(self, filename, lineno, identifier):
-        Expression.__init__(self, filename, lineno)
+    def __init__(self, filename, lineno, identifier, parent = None):
+        Expression.__init__(self, filename, lineno, parent)
         self.identifier = identifier
 
     def accept(self, visitor):
@@ -226,6 +226,12 @@ class IdentifierExpression(Expression):
         return "<IdentifierExpression:\n\tidentifier = %s,\n\texpression = %s>" % \
                (self.identifier.__repr__(),
                 super(IdentifierExpression, self).__repr__())
+
+    def __hash__(self):
+        return self.identifier.__hash__()
+
+    def __eq__(self, other):
+        return self.identifier.__eq__(other.identifier)
 
 class LiteralExpression(Expression):
     def __init__(self, filename, lineno, literal):

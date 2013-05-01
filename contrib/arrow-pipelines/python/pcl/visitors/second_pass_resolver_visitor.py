@@ -48,24 +48,24 @@ class SecondPassResolverVisitor(FirstPassResolverVisitor):
         expected_fn = lambda e: Just((set(e[0]), set(e[1]))) \
                       if isinstance(e, tuple) else Just(set(e))
 
-        _ = (Just(self._module.definition.inputs) >= expected_fn) >= \
-            (lambda expected_inputs: expr.resolution_symbols['inputs'] >= \
-             (lambda actual_inputs: self._errors.append("ERROR: %s at line %d, component " \
-                                                        "expects inputs %s, but got %s" % \
-                                                        (expr.filename, \
-                                                         expr.lineno, \
-                                                         type_formatting_fn(expected_inputs), \
-                                                         type_formatting_fn(actual_inputs))) \
-              if expected_inputs != actual_inputs else None))
-        _ = (Just(self._module.definition.outputs) >= expected_fn) >= \
-            (lambda expected_outputs: expr.resolution_symbols['outputs'] >= \
-             (lambda actual_outputs: self._errors.append("ERROR: %s at line %d, component " \
-                                                         "expects outputs %s, but got %s" % \
-                                                         (expr.filename, \
-                                                          expr.lineno, \
-                                                          type_formatting_fn(expected_outputs), \
-                                                          type_formatting_fn(actual_outputs))) \
-              if expected_outputs != actual_outputs else None))
+        self._module.resolution_symbols['inputs'] = (Just(self._module.definition.inputs) >= expected_fn) >= \
+                                                    (lambda expected_inputs: expr.resolution_symbols['inputs'] >= \
+                                                     (lambda actual_inputs: self._errors.append("ERROR: %s at line %d, component " \
+                                                                                                "expects inputs %s, but got %s" % \
+                                                                                                (expr.filename, \
+                                                                                                 expr.lineno, \
+                                                                                                 type_formatting_fn(expected_inputs), \
+                                                                                                 type_formatting_fn(actual_inputs))) or Nothing() \
+                                                      if expected_inputs != actual_inputs else Just(actual_inputs)))
+        self._module.resolution_symbols['outputs'] = (Just(self._module.definition.outputs) >= expected_fn) >= \
+                                                     (lambda expected_outputs: expr.resolution_symbols['outputs'] >= \
+                                                      (lambda actual_outputs: self._errors.append("ERROR: %s at line %d, component " \
+                                                                                                  "expects outputs %s, but got %s" % \
+                                                                                                  (expr.filename, \
+                                                                                                   expr.lineno, \
+                                                                                                   type_formatting_fn(expected_outputs), \
+                                                                                                   type_formatting_fn(actual_outputs))) or Nothing() \
+                                                       if expected_outputs != actual_outputs else Just(actual_outputs)))
 
     @multimethod(CompositionExpression)
     @resolve_expression_once
