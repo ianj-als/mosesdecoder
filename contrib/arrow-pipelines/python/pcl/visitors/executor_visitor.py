@@ -249,10 +249,10 @@ class ExecutorVisitor(object):
     @multimethod(WireTupleExpression)
     def visit(self, wire_tuple_expr):
         wire_fn = "lambda t: ({%s}, {%s})" % \
-                  (", ".join(["'%s' : t[0]'%s'" % \
+                  (", ".join(["'%s' : t[0]['%s']" % \
                               (m.to, m.from_) \
                               for m in wire_tuple_expr.top_mapping]), \
-                   ", ".join(["'%s' : t[1]'%s'" % \
+                   ", ".join(["'%s' : t[1]['%s']" % \
                               (m.to, m.from_) \
                               for m in wire_tuple_expr.bottom_mapping]))
         self.__write_line("%s = cons_wire(%s)" % \
