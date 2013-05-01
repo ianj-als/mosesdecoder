@@ -1,6 +1,7 @@
 import collections
 import glob
 import os
+import sys
 
 from multimethod import multimethod, multimethodclass
 from parser.import_spec import Import
@@ -51,29 +52,14 @@ def resolve_expression_once(method):
 class FirstPassResolverVisitor(ResolverVisitor):
     def __init__(self,
                  resolver_factory,
-                 pcl_import_path = [],
-                 python_import_path = []):
+                 pcl_import_path = []):
         ResolverVisitor.__init__(self)
         self.__resolver_factory = resolver_factory
         if pcl_import_path:
             self.__pcl_import_paths = pcl_import_path.split(";")
         else:
             self.__pcl_import_paths = ["."]
-        if python_import_path:
-            self.__python_import_paths = python_import_path.split(";")
-        else:
-            self.__python_import_paths = ["."]
-
-    @staticmethod
-    def __build_module_filename(identifier):
-        split_identifier = identifier.identifier.split('.')
-        if len(split_identifier) == 1:
-            module_filename = split_identifier[0]
-        else:
-            module_filename = os.path.join(os.path.join(*split_identifier[:-1]),
-                                           split_identifier[-1])
-
-        return module_filename + ".[Pp][Cc][Ll]", module_filename + ".[Pp][Yy]"
+        sys.path.extend(self.__pcl_import_paths)
 
     @staticmethod
     def __check_scalar_or_tuple_collection(collection):
@@ -181,66 +167,15 @@ class FirstPassResolverVisitor(ResolverVisitor):
 
     @multimethod(Import)
     def visit(self, an_import):
-        pcl_filename, py_filename = FirstPassResolverVisitor.__build_module_filename(an_import.module_name)
-        pcl_files = reduce(lambda x, y: x + y,
-                           [glob.glob(os.path.join(directory, pcl_filename))
-                            for directory in self.__pcl_import_paths])
-        python_files = reduce(lambda x, y: x + y,
-                              [glob.glob(os.path.join(directory, py_filename))
-                               for directory in self.__python_import_paths])
-
-        if pcl_files and not python_files:
-            # Module is a PCL file
-            # Parse the PCL module...
-            pcl_ast = parse_component(pcl_files[0])
-            if pcl_ast:
-                # Resolve the PCL module...
-                pcl_resolver = self.__resolver_factory(os.getenv("PCL_IMPORT_PATH", "."),
-                                                       os.getenv("PYTHONPATH", "."))
-                pcl_resolver.resolve(pcl_ast)
-
-                # Any warnings?
-                pcl_warnings = pcl_resolver.get_warnings()
-                for pcl_warning in pcl_warnings:
-                    self._warnings.append(pcl_warning)
-
-                # Any errors?
-                pcl_errors = pcl_resolver.get_errors()
-                if pcl_errors:
-                    self._errors.append("ERROR: %s at line %d, imported PCL module %s, " \
-                                        "with name %s, is invalid" % \
-                                        (an_import.filename,
-                                         an_import.lineno,
-                                         pcl_files[0],
-                                         an_import.module_name.identifier))
-                    for pcl_error in pcl_errors:
-                        self._errors.append(pcl_error)
-
-                # Add, only uniquely aliased, PCL modules to symbol table
-                import_symbol_dict = an_import.module.resolution_symbols['imports']
-                if import_symbol_dict.has_key(an_import.alias):
-                    self._errors.append("ERROR: %s at line %d, duplicate import alias found %s" % \
-                                        (an_import.filename, an_import.lineno, an_import.alias))
-                else:
-                    import_symbol_dict[an_import.alias] = {'type' : 'pcl',
-                                                           'module' : pcl_ast}
-            else:
-                self._errors.append("ERROR: %s at line %d, imported PCL module %s, with name %s, " \
-                                    "failed to parse" % \
-                                    (an_import.filename,
-                                     an_import.lineno,
-                                     pcl_files[0],
-                                     an_import.module_name.identifier))
-        elif not pcl_files and python_files:
-            # Module is Python module
-            import_symbol_dict = an_import.module.resolution_symbols['imports']
-            # Add, only uniquely aliased, Python modules to symbol table
-            if import_symbol_dict.has_key(an_import.alias):
-                self._errors.append("ERROR: %s at line %d, duplicate import alias found %s" % \
-                                    (an_import.filename, an_import.lineno, an_import.alias))
-            else:
-                print "Importing python %s" % an_import.module_name
-                # Import the Python module
+        # Hu rah, we're about to import something. Very exciting
+        import_symbol_dict = an_import.module.resolution_symbols['imports']
+        # Add, only uniquely aliased, Python modules to symbol table
+        if import_symbol_dict.has_key(an_import.alias):
+            self._errors.append("ERROR: %s at line %d, duplicate import alias found %s" % \
+                                (an_import.filename, an_import.lineno, an_import.alias))
+        else:
+            # Import the Python module
+            try:
                 imported_module = __import__(str(an_import.module_name),
                                              fromlist = ['get_inputs',
                                                          'get_outputs',
@@ -295,18 +230,11 @@ class FirstPassResolverVisitor(ResolverVisitor):
                                'configure_fn' : configure_fn,
                                'initialise_fn' : initialise_fn}
                 import_symbol_dict[an_import.alias] = module_spec
-        elif pcl_files and python_files:
-            self._errors.append("ERROR: %s at line %d, ambiguous module import %s is both PCL and Python" % \
-                                (an_import.filename,
-                                 an_import.lineno,
-                                 an_import.module_name))
-        else:
-            self._errors.append("ERROR: %s at line %d, module %s not found" % \
-                                (an_import.filename,
-                                 an_import.lineno,
-                                 an_import.module_name))
-
-        print "Import [%s] [%s]" % (an_import.module_name, an_import.alias)
+            except ImportError:
+                self._errors.append("ERROR: %s at line %d, module %s not found" % \
+                                    (an_import.filename,
+                                     an_import.lineno,
+                                     an_import.module_name))
 
     @multimethod(Component)
     def visit(self, component):

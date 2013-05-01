@@ -9,9 +9,7 @@ from visitors.executor_visitor import ExecutorVisitor
 if __name__ == '__main__':
     ast = parse_component(sys.argv[1])
 
-    pcl_import_path = os.getenv("PCL_IMPORT_PATH", ".")
-    python_import_path = os.getenv("PYTHONPATH", ".")
-    resolver = Resolver(pcl_import_path, python_import_path)
+    resolver = Resolver(os.getenv("PCL_IMPORT_PATH", "."))
     resolver.resolve(ast)
     for warning in resolver.get_warnings():
         print warning

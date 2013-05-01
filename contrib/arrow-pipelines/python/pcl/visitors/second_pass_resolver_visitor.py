@@ -17,12 +17,10 @@ from first_pass_resolver_visitor import FirstPassResolverVisitor, resolve_expres
 class SecondPassResolverVisitor(FirstPassResolverVisitor):
     def __init__(self,
                  resolver_factory,
-                 pcl_import_path = [],
-                 python_import_path = []):
+                 pcl_import_path = []):
         FirstPassResolverVisitor.__init__(self,
                                           resolver_factory,
-                                          pcl_import_path,
-                                          python_import_path)
+                                          pcl_import_path)
 
     @multimethod(Import)
     def visit(self, an_import):
