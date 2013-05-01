@@ -13,6 +13,12 @@ from pypeline.core.types.nothing import Nothing
 from first_pass_resolver_visitor import FirstPassResolverVisitor, resolve_expression_once
 
 
+type_formatting_fn = lambda m: m >= (lambda c: "(%s), (%s)" % (", ".join([i.identifier for i in c[0]]), \
+                                                               ", ".join([i.identifier for i in c[1]])) \
+                                     if isinstance(c, tuple) \
+                                     else ", ".join([i.identifier for i in c]))
+
+
 @multimethodclass
 class SecondPassResolverVisitor(FirstPassResolverVisitor):
     def __init__(self,
@@ -44,21 +50,21 @@ class SecondPassResolverVisitor(FirstPassResolverVisitor):
 
         _ = (Just(self._module.definition.inputs) >= expected_fn) >= \
             (lambda expected_inputs: expr.resolution_symbols['inputs'] >= \
-             (lambda actual_inputs: self._errors.append("ERROR: %s at line %d component " \
+             (lambda actual_inputs: self._errors.append("ERROR: %s at line %d, component " \
                                                         "expects inputs %s, but got %s" % \
                                                         (expr.filename, \
                                                          expr.lineno, \
-                                                         expected_inputs, \
-                                                         actual_inputs)) \
+                                                         type_formatting_fn(expected_inputs), \
+                                                         type_formatting_fn(actual_inputs))) \
               if expected_inputs != actual_inputs else None))
         _ = (Just(self._module.definition.outputs) >= expected_fn) >= \
             (lambda expected_outputs: expr.resolution_symbols['outputs'] >= \
-             (lambda actual_outputs: self._errors.append("ERROR: %s at line %d component " \
+             (lambda actual_outputs: self._errors.append("ERROR: %s at line %d, component " \
                                                          "expects outputs %s, but got %s" % \
                                                          (expr.filename, \
                                                           expr.lineno, \
-                                                          expected_outputs, \
-                                                          actual_outputs)) \
+                                                          type_formatting_fn(expected_outputs), \
+                                                          type_formatting_fn(actual_outputs))) \
               if expected_outputs != actual_outputs else None))
 
     @multimethod(CompositionExpression)
@@ -69,12 +75,12 @@ class SecondPassResolverVisitor(FirstPassResolverVisitor):
         left_outputs = comp_expr.left.resolution_symbols['outputs']
         right_inputs = comp_expr.right.resolution_symbols['inputs']
         if left_outputs != right_inputs:
-            self._errors.append("ERROR: %s at line %d attempted composition " \
+            self._errors.append("ERROR: %s at line %d, attempted composition " \
                                 "with incompatible components, expected %s, got %s" % \
                                 (comp_expr.filename,
                                  comp_expr.lineno,
-                                 left_outputs,
-                                 right_inputs))
+                                 type_formatting_fn(left_outputs),
+                                 type_formatting_fn(right_inputs)))
 
         # Update the inputs and outputs for this composed component
         comp_expr.resolution_symbols['inputs'] = comp_expr.left.resolution_symbols['inputs']

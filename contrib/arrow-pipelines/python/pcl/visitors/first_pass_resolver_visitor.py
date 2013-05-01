@@ -94,17 +94,18 @@ class FirstPassResolverVisitor(ResolverVisitor):
                 except KeyError:
                     dups[decl] = 1
 
+                import_module_name = None
+                import_module_config = []
+
                 # Lookup component alias in module symbol table
                 try:
                     import_module_spec = imports[decl.component_alias]
-                    if import_module_spec['type'] == 'pcl':
-                        # Get the imported module configuration identifiers
-                        import_module_config = import_module_spec['module'].definition.configuration
-                        import_module_name = import_module_spec['module'].definition.identifier
-                    else:
-                        # Get the module inputs from the Python module's
-                        # get_inputs() function
-                        import_module_name = import_module_spec['module'].__name__
+                    # Get the module inputs from the Python module's
+                    # get_inputs() function
+                    import_module_name = import_module_spec['module_name_id'].identifier
+                    # If the module was not found, it was not imported and so
+                    # the module spec will *not* have the Python module stored
+                    if import_module_spec.has_key('module'):
                         try:
                             # The Python module's component inputs
                             import_module_config = [Identifier(import_module_spec['module'].__name__, 0, c) \
@@ -112,7 +113,6 @@ class FirstPassResolverVisitor(ResolverVisitor):
                         except AttributeError:
                             python_module_interface.append({'module_name' : import_module_name,
                                                             'missing_function' : 'get_configuration'})
-                            import_module_config = []
                 except KeyError:
                     # Ensures we have imported an alias that is being used
                     # in this declaration
@@ -175,6 +175,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
                                 (an_import.filename, an_import.lineno, an_import.alias))
         else:
             # Import the Python module
+            module_spec = {'module_name_id' : an_import.module_name}
             try:
                 imported_module = __import__(str(an_import.module_name),
                                              fromlist = ['get_inputs',
@@ -186,7 +187,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
                     get_inputs_fn = getattr(imported_module, 'get_inputs')
                 except AttributeError:
                     get_inputs_fn = lambda _: []
-                    self._errors.append("ERROR: %s at line %d imported Python module %s " \
+                    self._errors.append("ERROR: %s at line %d, imported Python module %s " \
                                         "does not define get_inputs function" % \
                                         (an_import.filename, an_import.lineno,
                                          an_import.module_name))
@@ -194,7 +195,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
                     get_outputs_fn = getattr(imported_module, 'get_outputs')
                 except AttributeError:
                     get_outputs_fn = lambda _: []
-                    self._errors.append("ERROR: %s at line %d imported Python module %s " \
+                    self._errors.append("ERROR: %s at line %d, imported Python module %s " \
                                         "does not define get_outputs function" % \
                                         (an_import.filename, an_import.lineno,
                                          an_import.module_name))
@@ -202,7 +203,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
                     get_configuration_fn = getattr(imported_module, 'get_configuration')
                 except AttributeError:
                     get_configuration_fn = lambda _: []
-                    self._errors.append("ERROR: %s at line %d imported Python module %s " \
+                    self._errors.append("ERROR: %s at line %d, imported Python module %s " \
                                         "does not define get_configuration function" % \
                                         (an_import.filename, an_import.lineno,
                                          an_import.module_name))
@@ -210,7 +211,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
                     configure_fn = getattr(imported_module, 'configure')
                 except AttributeError:
                     configure_fn = lambda _: None
-                    self._errors.append("ERROR: %s at line %d imported Python module %s " \
+                    self._errors.append("ERROR: %s at line %d, imported Python module %s " \
                                         "does not define configure function" % \
                                         (an_import.filename, an_import.lineno,
                                          an_import.module_name))
@@ -218,23 +219,24 @@ class FirstPassResolverVisitor(ResolverVisitor):
                     initialise_fn = getattr(imported_module, 'initialise')
                 except AttributeError:
                     initialise_fn = lambda _: (lambda a, s: dict())
-                    self._errors.append("ERROR: %s at line %d imported Python module %s " \
+                    self._errors.append("ERROR: %s at line %d, imported Python module %s " \
                                         "does not define initialise function" % \
                                         (an_import.filename, an_import.lineno,
                                          an_import.module_name))
-                module_spec = {'type' : 'python',
-                               'module' : imported_module,
-                               'get_inputs_fn' : get_inputs_fn,
-                               'get_outputs_fn' : get_outputs_fn,
-                               'get_configuration_fn' : get_configuration_fn,
-                               'configure_fn' : configure_fn,
-                               'initialise_fn' : initialise_fn}
-                import_symbol_dict[an_import.alias] = module_spec
+                module_spec.update({'module' : imported_module,
+                                    'get_inputs_fn' : get_inputs_fn,
+                                    'get_outputs_fn' : get_outputs_fn,
+                                    'get_configuration_fn' : get_configuration_fn,
+                                    'configure_fn' : configure_fn,
+                                    'initialise_fn' : initialise_fn})
             except ImportError:
                 self._errors.append("ERROR: %s at line %d, module %s not found" % \
                                     (an_import.filename,
                                      an_import.lineno,
                                      an_import.module_name))
+
+            # Always add the module alias as a key to the import dictionary
+            import_symbol_dict[an_import.alias] = module_spec
 
     @multimethod(Component)
     def visit(self, component):
@@ -266,55 +268,55 @@ class FirstPassResolverVisitor(ResolverVisitor):
            duplicate_declarations or \
            unknown_module_configuration or \
            python_module_interace:
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d input " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, input " \
                              "declaration contains duplicate identifier %(entity)s",
                              duplicate_inputs,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d output " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, output " \
                              "declaration contains duplicate identifier %(entity)s",
                              duplicate_outputs,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d configuration " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, configuration " \
                              "declaration contains duplicate identifier %(entity)s",
                              duplicate_config,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d component " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, component " \
                              "declaration contains duplicate identifier %(entity)s",
                              duplicate_decl_identifiers,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d component " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, component " \
                              "configuration does not exist %(entity)s",
                              missing_configuration,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_warnings("WARNING: %(filename)s at line %(lineno)d component " \
+            self._add_warnings("WARNING: %(filename)s at line %(lineno)d, component " \
                                "configuration is not used %(entity)s",
                                unused_configuration,
                                lambda e: {'entity' : e,
                                           'filename' : e.filename,
                                           'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d import not found " \
-                             "in declaration %(entity)s",
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, import not found " \
+                             "in declaration of %(entity)s",
                              unknown_imports,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d duplicate declaration " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, duplicate declaration " \
                              "found %(entity)s",
                              duplicate_declarations,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d configuration %(entity)s " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, configuration %(entity)s " \
                              "used which is not defined in module %(module_name)s",
                              unknown_module_configuration,
                              lambda e: {'entity' : e['config_map'].to,
@@ -416,19 +418,19 @@ class FirstPassResolverVisitor(ResolverVisitor):
         if duplicate_top_in_identifiers or \
            duplicate_bottom_in_identifiers or \
            duplicate_out_identifiers:
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d merge top mapping " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, merge top mapping " \
                              "contains duplicate identifier %(entity)s",
                              duplicate_top_in_identifiers,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d merge bottom mapping " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, merge bottom mapping " \
                              "contains duplicate identifier %(entity)s",
                              duplicate_bottom_in_identifiers,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d merge output mapping " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, merge output mapping " \
                              "contains duplicate identifier %(entity)s",
                              duplicate_out_identifiers,
                              lambda e: {'entity' : e,
@@ -483,25 +485,25 @@ class FirstPassResolverVisitor(ResolverVisitor):
            duplicate_top_out_identifiers or \
            duplicate_bottom_in_identifiers or \
            duplicate_bottom_out_identifier:
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d tuple wire mapping " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, tuple wire mapping " \
                              "contains duplicate top input identifier %(entity)s",
                              duplicate_top_in_identifiers,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d tuple wire mapping " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, tuple wire mapping " \
                              "contains duplicate top output identifier %(entity)s",
                              duplicate_top_out_identifiers,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d tuple wire mapping " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, tuple wire mapping " \
                              "contains duplicate bottom input identifier %(entity)s",
                              duplicate_bottom_in_identifiers,
                              lambda e: {'entity' : e,
                                         'filename' : e.filename,
                                         'lineno' : e.lineno})
-            self._add_errors("ERROR: %(filename)s at line %(lineno)d tuple wire mapping " \
+            self._add_errors("ERROR: %(filename)s at line %(lineno)d, tuple wire mapping " \
                              "contains duplicate bottom output identifier %(entity)s",
                              duplicate_bottom_out_identifier,
                              lambda e: {'entity' : e,
@@ -542,7 +544,7 @@ class FirstPassResolverVisitor(ResolverVisitor):
                                                      None,
                                                      [])]
         except KeyError:
-            self._errors.append("ERROR: %s at line %d unknown component %s" % \
+            self._errors.append("ERROR: %s at line %d, unknown component %s" % \
                                 (iden_expr.filename,
                                  iden_expr.lineno,
                                  iden_expr))
@@ -550,13 +552,11 @@ class FirstPassResolverVisitor(ResolverVisitor):
         module_alias = declaration.component_alias
         module_spec = imports_sym_table[module_alias]
 
-        get_inputs_fn = module_spec['get_inputs_fn']
-        get_outputs_fn = module_spec['get_outputs_fn']
-
-        iden_expr.resolution_symbols['inputs'] = Just(set([Identifier(None, 0, i) \
-                                                           for i in get_inputs_fn()]))
-        iden_expr.resolution_symbols['outputs'] = Just(set([Identifier(None, 0, i) \
-                                                            for i in get_outputs_fn()]))
+        root = Just(0) if module_spec.has_key('module') else Nothing()
+        iden_expr.resolution_symbols['inputs'] = root >= (lambda _: Just(set([Identifier(None, 0, i) \
+                                                                              for i in module_spec['get_inputs_fn']()])))
+        iden_expr.resolution_symbols['outputs'] = root >= (lambda _: Just(set([Identifier(None, 0, i) \
+                                                                               for i in module_spec['get_outputs_fn']()])))
 
     @multimethod(LiteralExpression)
     def visit(self, literal_expr):
