@@ -14,7 +14,6 @@ class Resolver(object):
     def resolve(self, ast):
         for visitor in self.__visitors:
             ast.accept(visitor)
-            print ast.__repr__()
 
     def has_warnings(self):
         return reduce(lambda acc, r: acc + int(r.has_warnings()),

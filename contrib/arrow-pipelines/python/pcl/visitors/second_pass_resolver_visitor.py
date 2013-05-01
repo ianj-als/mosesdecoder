@@ -95,22 +95,13 @@ class SecondPassResolverVisitor(FirstPassResolverVisitor):
                    not isinstance(node.resolution_symbols['inputs'], Nothing):
                     return node.resolution_symbols['inputs']
             elif node.right is child:
-                if isinstance(node.parent, BinaryExpression):
-                    if node.parent.left.resolution_symbols.has_key('outputs') and \
-                       not isinstance(node.parent.left.resolution_symbols['outputs'], Nothing):
-                        return node.parent.left.resolution_symbols['outputs']
-                elif isinstance(node.parent, UnaryExpression):
-                    if node.parent.expression.resolution_symbols.has_key('outputs') and \
-                       not isinstance(node.parent.expression.resolution_symbols['outputs'], Nothing):
-                        return node.parent.expression.resolution_symbols['outputs']
-                else:
-                    raise Exception("Node's parent of unexpected type: %s" % type(node.parent))
+                if node.left.resolution_symbols.has_key('outputs') and \
+                   not isinstance(node.left.resolution_symbols['outputs'], Nothing):
+                    return node.left.resolution_symbols['outputs']
             else:
                 raise Exception("Child is neither left or right: %s" % child.__repr__())
         elif isinstance(node, UnaryExpression):
-            if node.resolution_symbols.has_key('inputs') and \
-               not isinstance(node.resolution_symbols['inputs'], Nothing):
-                return node.resolution_symbols['inputs']
+            pass
         else:
             raise Exception("Unexpected expression type: %s" % type(node))
 
@@ -124,7 +115,6 @@ class SecondPassResolverVisitor(FirstPassResolverVisitor):
 
         # Derive the bottom inputs
         inputs = self.__derive_inputs(first_expr)
-        print "FIRST INS: %s" % inputs
         bottom_inputs = inputs >= (lambda ins: Just(set(ins[1])) if isinstance(ins, tuple) else Just(set(ins)))
 
         first_expr.resolution_symbols['inputs'] = top_inputs >= (lambda tins: bottom_inputs >= \
