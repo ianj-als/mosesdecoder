@@ -248,6 +248,8 @@ class FirstPassResolverVisitor(ResolverVisitor):
 
     @multimethod(Component)
     def visit(self, component):
+        # Component name *must* be the same as te file name
+
         # Add the inputs, outputs, configuration and declaration identifiers to
         # the module's symbol table
         duplicate_inputs = FirstPassResolverVisitor.__check_scalar_or_tuple_collection(component.inputs)
