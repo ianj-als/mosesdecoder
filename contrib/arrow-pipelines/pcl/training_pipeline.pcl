@@ -1,10 +1,10 @@
 #
 # Import all of the components to be composed
 #
-import com.capitati.smartmate.components.src_trg_tokenizer as tokeniser
-import com.capitati.smartmate.components.translation_model_training as model_training
-import com.capitati.smartmate.components.irstlm_build as lang_model
-import com.capitati.smartmate.components.mert as mert
+import components.src_trg_tokenizer as tokeniser
+import components.translation_model_training as model_training
+import components.wrappers.irstlm_build.irstlm_build as lang_model
+import components.wrappers.mert.mert as mert
 
 #
 # Component definition

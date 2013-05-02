@@ -1,5 +1,3 @@
-from pypeline.helpers.helpers import cons_function_component
-
 def configure(args):
   result = {}
   result['segment_length'] = args['segment_length_limit']
