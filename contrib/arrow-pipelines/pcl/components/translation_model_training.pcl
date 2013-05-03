@@ -51,8 +51,11 @@ component translation_model_training
     wire cleaned_src_filename -> src_filename,
          clean_trg_filename -> trg_filename >>>
     data_split >>>
+    wire devel_src_filename -> training_data_filename,
+         eval_src_filename -> evaluation_data_filename >>>
     split >>>
-    (first model_training) >>>
+    ((wire training_data_filename -> training_data_filename >>> model_training) ***
+     wire evaluation_data_filename -> evaluation_data_filename) >>>
     merge top[moses_ini_filename] -> moses_ini_filename,
-          bottom[eval_src_filename] -> evaluation_data_filename
+          bottom[evaluation_data_filename] -> evaluation_data_filename
 
