@@ -6,14 +6,14 @@ def get_name():
     return 'mert'
 
 def get_inputs():
-    return ['development_data_filename', 'trg_language_model_filename',
+    return ['evaluation_data_filename', 'trg_language_model_filename',
             'trg_language_model_order', 'trg_language_model_type',
-            'moses_ini_file']
+            'moses_ini_filename']
 
 def get_outputs():
-    return ['moses_ini_file']
+    return ['moses_ini_filename']
 
-def configuration():
+def get_configuration():
     return ['source_language', 'target_language',
             'moses_installation_dir', 'mert_working_directory']
 
@@ -27,7 +27,7 @@ def configure(args):
 
 def initialise(config):
     def process(a, s):
-        infilename = os.path.abspath(a['development_data_filename'])
+        infilename = os.path.abspath(a['evaluation_data_filename'])
         lm_file = os.path.abspath(a['trg_language_model_filename'])
         lm_order = int(a['trg_language_model_order'])
         lm_type = int(a['trg_language_model_type'])
@@ -69,7 +69,7 @@ def initialise(config):
         if not os.path.exists(new_mosesini):
             raise Exception, 'Failed MERT'
         
-        return {'moses_ini_file' : new_mosesini}
+        return {'moses_ini_filename' : new_mosesini}
 
     return process
 

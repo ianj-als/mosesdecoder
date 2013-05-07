@@ -31,6 +31,7 @@ component translation_model_training
                 model_training.trg.language,
                 model_training.method.alignment,
                 model_training.method.reordering,
+                model_training.moses.installation,
                 model_training.giza.installation,
                 model_training.translation_model.dir
   declare
@@ -44,17 +45,24 @@ component translation_model_training
       model_training.trg.language -> target_language,
       model_training.method.alignment -> alignment_method,
       model_training.method.reordering -> reordering_method,
+      model_training.moses.installation -> moses_installation_dir,
       model_training.giza.installation -> giza_installation_dir,
       model_training.translation_model.dir -> translation_model_directory
   as
     cleanup >>>
     wire cleaned_src_filename -> src_filename,
-         clean_trg_filename -> trg_filename >>>
+         cleaned_trg_filename -> trg_filename >>>
     data_split >>>
-    wire devel_src_filename -> training_data_filename,
-         eval_src_filename -> evaluation_data_filename >>>
-    split >>>
-    ((wire training_data_filename -> training_data_filename >>> model_training) ***
+    wire devel_src_filename -> devel_src_filename,
+         eval_src_filename -> evaluation_data_filename,
+         train_trg_filename -> _,
+         train_src_filename -> _,
+         eval_trg_filename -> _,
+         devel_trg_filename -> devel_trg_filename >>>
+    ((wire devel_src_filename -> src_filename,
+           devel_trg_filename -> trg_filename,
+           evaluation_data_filename -> _ >>>
+      model_training) &&&
      wire evaluation_data_filename -> evaluation_data_filename) >>>
     merge top[moses_ini_filename] -> moses_ini_filename,
           bottom[evaluation_data_filename] -> evaluation_data_filename

@@ -11,7 +11,7 @@ def get_configuration():
     return ['segment_length_limit']
 
 def configure(args):
-    return {'segment_length' : arg['segment_length_limit']}
+    return {'segment_length' : args['segment_length_limit']}
 
 def initialise(config):
     def _filter(limit, ifh1, ofh1, ifh2, ofh2):

@@ -11,7 +11,7 @@ def get_inputs():
     return ['input_filename']
 
 def get_outputs():
-    return ['add_start_end_filename', 'lm_filename', 'compile_lm_filename']
+    return ['add_start_end_filename', 'lm_filename', 'compiled_lm_filename']
 
 def get_configuration():
     return ['irstlm_installation_dir', 'irstlm_smoothing_method', 'language_model_directory']
