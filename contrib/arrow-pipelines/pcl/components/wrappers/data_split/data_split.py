@@ -31,12 +31,7 @@ def initialise(config):
 
     def _make_split_filename(filename, data_set):
         bits = filename.split(".")
-        last = bits.pop()
-        lang_code = bits.pop()
-  
-        bits.append(last)
-        bits.append(data_set)
-        bits.append(lang_code)
+        bits.insert(-1, data_set)
 
         new_filename = ".".join(bits)
         return new_filename
@@ -74,7 +69,7 @@ def initialise(config):
                 _safe_close(ofh1)
                 _safe_close(ofh2)
     
-        return _splitter_main
+    return _splitter_main
 
 
 if __name__ == '__main__':

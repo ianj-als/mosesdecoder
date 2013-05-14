@@ -29,7 +29,7 @@ def initialise(config):
 
     def _make_cleaned_filename(filename):
         bits = filename.split(".")
-        bits[-1] = "clean"
+        bits.insert(-1, "clean")
         return ".".join(bits)
 
     def _filter_main(a, s):
