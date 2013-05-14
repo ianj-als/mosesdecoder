@@ -9,21 +9,21 @@ import components.wrappers.mert.mert as mert
 #
 # Component definition
 #
-#                                                         State: { model_training.max_segment_length,
-#                                                                  model_training.corpus.[development_size|evaluation_size],
-#                                                                  model_training.[src|trg].language,
-#                                                                  model_training.method.[alignment|reordering], {moses_ini_filename,
-#                                                                  model_training.giza.installation,              evaluation_data_filename}
-# {src_filename,    {tokenised_src_filename,                       model_training.translation_model.dir}          |
+#                                                        Config: {model_training.max_segment_length,
+#                                                                 model_training.corpus.[development_size|evaluation_size],
+#                                                                 model_training.[src|trg].language,
+#                                                                 model_training.method.[alignment|reordering],  {moses_ini_filename,
+#                                                                 model_training.giza.installation,               evaluation_data_filename}
+# {src_filename,    {tokenised_src_filename,                      model_training.translation_model.dir}           |
 #  trg_filename}     tokenised_trg_filename}             +-----------------------------------------+   +-------+  |          {moses_ini_filename}
 #  |  +-------+    +-------+    +-------+ |  +-------+   | tokenised_src_filename -> src_filename, |   | Model |  V    +-------+               |
 #  V  |       +--->+ Src/  +--->+       | V  |       +-->+ tokenised_trg_filename -> trg_filename  +-->+ Train +------>+       |      +------+ V
 # --->+ Split |    | Trg   |    | Merge +--->+ Split |   +-----------------------------------------+   +-------+       | Merge +----->+ MERT +--->
 #     |       +--->+ Token +--->+       |    |       +--\  +------------------------------------------+   +--------+   |       |  ^   +------+
 #     +-------+    +-------+    +-------+    +-------+  \->+ tokenised_trg_filename -> input_filename +-->+ IRSTLM +-->+       |  |
-# State: {tokeniser.[src|trg].language,                    +------------------------------------------+   +--------+ ^ +-------+  |
-#         tokeniser.[src|trg].tokeniser_dir                               State: {irstlm_installation_dir::String,   |            |
-#         tokeniser.moses.installation}                                           irstlm_smoothing_method::String,   |            |
+# Config: {tokeniser.[src|trg].language,                   +------------------------------------------+   +--------+ ^ +-------+  |
+#          tokeniser.[src|trg].tokeniser_dir                             Config: {irstlm_installation_dir::String,   |            |
+#          tokeniser.moses.installation}                                          irstlm_smoothing_method::String,   |            |
 #                                                                                 language_model_directory}          |            |
 #                                                                                                                    |            |
 #                                                           {lm_filename, compiled_lm_filename, add_start_end_filename}           |

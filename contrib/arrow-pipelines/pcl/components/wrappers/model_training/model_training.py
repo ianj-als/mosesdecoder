@@ -33,7 +33,7 @@ def configure(args):
 
 def initialise(config):
     def process(a, s):
-        get_corpora_name_fn = lambda fn: os.path.basename(fn).split('.')[0]
+        get_corpora_name_fn = lambda fn: ".".join(os.path.basename(fn).split('.')[:-1])
         src_filename = os.path.abspath(a['src_filename'])
         trg_filename = os.path.abspath(a['trg_filename'])
         src_corpora_name = get_corpora_name_fn(src_filename)

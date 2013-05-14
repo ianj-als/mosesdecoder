@@ -19,7 +19,10 @@ class BatchTokenizer(object):
 
     def tokenise(self, filename):
         basefilename = os.path.basename(filename)
-        outfilename = os.path.join(self.__working_dir, basefilename + '.tok')
+        bits = basefilename.split(".")
+        bits.insert(-1, "tok")
+        basefilename = ".".join(bits)
+        outfilename = os.path.join(self.__working_dir, basefilename)
         cmd = '%s -q -l %s < %s > %s' % (self.__tokeniser, self.__language, filename, outfilename)
         pipe = subprocess.Popen(cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, shell=True)
         pipe.wait()

@@ -8,18 +8,18 @@ import wrappers.model_training.model_training as model_training
 #
 # Component definition
 #
-#        {cleaned_src_filename, {src_filename, {[devel|eval|train]_src_filename, {train_src_filename,
-#         cleaned_trg_filename}  trg_filename}  [devel|eval|train]_trg_filename}  train_trg_filename}
-#                             |  |              |                                 | +-------+                                   {moses_ini_file,
-#                   +-------+ |  | +-------+    |         +-------+               V | Model |         {moses_ini_file} +-------+ evaluation_data_filename}
-#                   | Clean | V  V | Data  |    V         |       +---------------->+ Train +------------------------->+ Merge +-------------------------->
-# {src_filename, -->+       +----->+       +------------->+ Split |                 +-------+                          +---+---+
-#  trg_filename}    |  Up   |      | Split |              |       +---\  State: {[src|trg]_language::String,               ^
-#                   +-------+      +-------+              +-------+   |         alignment_method::String,                  |
-# State: {segment_length::Int}   State: {development_size::Int,       |         reordering_method::String,                 |
-#                                        evaluation_size::Int}        |         giza_installation_dir::String,             |
-#                                                                     |         model_directory::String}                   |
-#                                                                     \----------------------------------------------------/
+#        {cleaned_src_filename, {src_filename, {[devel|eval|train]_src_filename, {src_filename,    {moses_ini_file,
+#         cleaned_trg_filename}  trg_filename}  [devel|eval|train]_trg_filename}  trg_filename}     evaluation_data_filename}
+#                             |  |              |                                 | +-------+                              |
+#                   +-------+ |  | +-------+    |         +-------+               V | Model | {moses_ini_file} +-------+   V
+#                   | Clean | V  V | Data  |    V         |       +---------------->+ Train +----------------->+ Merge +----->
+# {src_filename, -->+       +----->+       +------------->+ Split |                 +-------+                  +---+---+
+#  trg_filename}    |  Up   |      | Split |              |       +---\  Config: {[src|trg]_language::String,      ^
+#                   +-------+      +-------+              +-------+   |           alignment_method::String,        |
+# Config: {segment_length::Int} Config: {development_size::Int,       |           reordering_method::String,       |
+#                                        evaluation_size::Int}        |           giza_installation_dir::String,   |
+#                                                                     |           model_directory::String}         |
+#                                                                     \--------------------------------------------/
 #
 component translation_model_training
   inputs src_filename, trg_filename
@@ -66,4 +66,3 @@ component translation_model_training
      wire evaluation_data_filename -> evaluation_data_filename) >>>
     merge top[moses_ini_filename] -> moses_ini_filename,
           bottom[evaluation_data_filename] -> evaluation_data_filename
-

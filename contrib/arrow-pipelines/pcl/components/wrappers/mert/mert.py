@@ -28,10 +28,11 @@ def configure(args):
 def initialise(config):
     def process(a, s):
         infilename = os.path.abspath(a['evaluation_data_filename'])
+        infilename = ".".join(infilename.split(".")[:-1])
         lm_file = os.path.abspath(a['trg_language_model_filename'])
         lm_order = int(a['trg_language_model_order'])
         lm_type = int(a['trg_language_model_type'])
-        orig_moses_ini = os.path.abspath(a['moses_ini_file'])
+        orig_moses_ini = os.path.abspath(a['moses_ini_filename'])
         
         if not os.path.exists(orig_moses_ini):
             raise Exception, "Error: Input moses.ini does not exist"

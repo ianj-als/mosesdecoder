@@ -11,9 +11,9 @@ import wrappers.tokenizer.tokenizer as tokeniser
 #                 |         |                |         |                          |         |                          |         |
 # trg_filename -->+         +--> filename -->+---------+-------> filename ------->+-- trg --+--> tokenised_filename -->+         +--> tokenised_trg_filename
 #                 +---------+                +---------+                          +---------+                          +---------+
-#                                   State: {language::String,              State: {language::String,
-#                                           tokenisation_dir::String,              tokenisation_dir::String,
-#                                           moses_installation_dir::String}        moses_installation_dir::String}
+#                                  Config: {language::String,              Config: {language::String,
+#                                           tokenisation_dir::String,               tokenisation_dir::String,
+#                                           moses_installation_dir::String}         moses_installation_dir::String}
 #
 component src_trg_tokeniser
   inputs (src_filename), (trg_filename)
