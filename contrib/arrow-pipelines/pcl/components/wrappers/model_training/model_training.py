@@ -68,8 +68,8 @@ def initialise(config):
         alignment_method = config['alignment']
         reordering_method = config['reordering']
         cmd = '%(train_model_perl)s -root-dir %(workdir)s -corpus %(infilename)s ' \
-              '-f %(src_lang)s -e %(trg_lang)s -alignment $(alignment_method)s ' \
-              '-reordering %(reordering_method) -lm 0:5:%(dummy_lmfile)s:0 ' \
+              '-f %(src_lang)s -e %(trg_lang)s -alignment %(alignment_method)s ' \
+              '-reordering %(reordering_method)s -lm 0:5:%(dummy_lmfile)s:0 ' \
               '-external-bin-dir %(external_bin)s 2> %(logfile)s'
         cmd = cmd % locals()
 
